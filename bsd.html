@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — BSD</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+
+/* DOCBAR */
+.docbar { background: white; border-bottom: 1px solid #dde1e5; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.doc-info { display: flex; align-items: center; gap: 10px; }
+.doc-label { font-size: 11px; color: #888; }
+.doc-ref { font-size: 18px; font-weight: bold; color: #559FD7; }
+.doc-ref.pending { color: #c8cfd8; font-style: italic; font-size: 14px; }
+.steps { display: flex; }
+.step { padding: 6px 16px; font-size: 12px; border: 1px solid #dde1e5; background: #f4f6f8; color: #888; white-space: nowrap; }
+.step:first-child { border-radius: 6px 0 0 6px; }
+.step:last-child { border-radius: 0 6px 6px 0; }
+.step.active { background: #29608A; color: white; border-color: #29608A; font-weight: bold; }
+.step.done { background: #8CC740; color: white; border-color: #8CC740; }
+.step.cancelled { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+/* ACTBAR */
+.actbar { background: white; border-bottom: 1px solid #dde1e5; padding: 8px 24px; display: flex; gap: 6px; align-items: center; position: sticky; top: 115px; z-index: 98; box-shadow: 0 2px 6px rgba(0,0,0,0.06); flex-wrap: wrap; }
+.btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; transition: opacity 0.15s; }
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-save { background: #29608A; color: white; border-color: #29608A; }
+.btn-prevalidate { background: #559FD7; color: white; border-color: #559FD7; }
+.btn-validate { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-cancel { color: #b03a2e; border-color: #b03a2e; }
+.btn-brouillon { color: #7a5c00; border-color: #f0c040; background: #fff8e6; }
+.btn-print { color: #559FD7; border-color: #559FD7; }
+.sep { width: 1px; height: 22px; background: #dde1e5; margin: 0 2px; }
+.status-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.sc-brouillon { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.sc-prevalidé { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.sc-validé { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.sc-annulé { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+
+.body { padding: 20px 24px; max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+
+/* CARDS */
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 11px 18px; display: flex; align-items: center; gap: 10px; }
+.ch-blue { background: #29608A; }
+.ch-green { background: #3d7a14; }
+.ch-mid { background: #1a5276; }
+.ch-dark { background: #1f3d52; }
+.ch-gray { background: #555; }
+.ch-orange { background: #e67e22; }
+.card-head-title { font-size: 14px; font-weight: bold; color: white; }
+.dot-g { width: 9px; height: 9px; border-radius: 50%; background: #8CC740; flex-shrink: 0; }
+.dot-b { width: 9px; height: 9px; border-radius: 50%; background: #559FD7; flex-shrink: 0; }
+.dot-w { width: 9px; height: 9px; border-radius: 50%; background: white; opacity: 0.7; flex-shrink: 0; }
+.chr { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.card-body { padding: 18px; }
+
+/* GRILLES */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* CHAMPS */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input, .field select, .field textarea { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 14px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #559FD7; box-shadow: 0 0 0 2px rgba(85,159,215,0.15); }
+.field input[readonly], .field textarea[readonly] { background: #f4f6f8; color: #888; cursor: default; }
+.sub-title { font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #8CC740; }
+
+/* AUTOCOMPLETE */
+.ac-wrap { position: relative; }
+.ac-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #c8cfd8; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 400; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; }
+.ac-list.open { display: block; }
+.ac-item { padding: 9px 14px; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.ac-item:hover { background: #f0f7fd; }
+.ac-item-name { font-weight: bold; color: #29608A; }
+.ac-item-sub { font-size: 11px; color: #888; }
+.ac-item.new-item { color: #8CC740; font-style: italic; }
+
+/* TABS */
+.tabs { display: flex; border-bottom: 1px solid #dde1e5; background: #fafbfc; }
+.tab { padding: 11px 18px; font-size: 13px; cursor: pointer; border: none; background: none; color: #888; font-family: Arial, sans-serif; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; }
+.tab.active { color: #29608A; border-bottom-color: #8CC740; font-weight: bold; background: white; }
+.tab-content { display: none; padding: 18px; }
+.tab-content.active { display: block; }
+
+/* OPÉRATIONS TABLE */
+.ops-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ops-table th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: bold; border-bottom: 1px solid #dde1e5; text-transform: uppercase; white-space: nowrap; }
+.th-art { background: #f4f6f8; color: #29608A; }
+.th-prev { background: #e8f0f7; color: #1a5276; }
+.th-reel { background: #eaf5d5; color: #3d7a14; }
+.th-ecart { background: #f4f6f8; color: #888; }
+.ops-table td { padding: 6px 8px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; }
+.ops-table td.bg-prev { background: #f8fbff; }
+.ops-table td input, .ops-table td select { border: 1px solid #c8cfd8; border-radius: 4px; padding: 5px 7px; font-size: 13px; background: white; color: #404041; width: 100%; font-family: Arial, sans-serif; }
+.ops-table td.bg-reel input { border-color: #8CC740; }
+.ecart-ok { color: #3d7a14; font-weight: bold; text-align: center; }
+.ecart-neg { color: #7a5c00; font-weight: bold; text-align: center; }
+.ecart-pos { color: #b03a2e; font-weight: bold; text-align: center; }
+.alert-ecart { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 10px; display: none; }
+.alert-ecart.vis { display: block; }
+.ae-warn { background: #fff3cd; border: 1px solid #f0c040; color: #7a5c00; }
+.ae-error { background: #fdf0ef; border: 1px solid #e74c3c; color: #b03a2e; }
+
+/* POIDS */
+.poids-section { background: #f8fafb; border: 1px solid #dde1e5; border-radius: 8px; padding: 14px; margin-top: 14px; }
+.poids-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.poids-field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+.poids-field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; }
+.poids-field input { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 14px; font-family: Arial, sans-serif; width: 100%; }
+.pesee-label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 9px 13px; border: 1px solid #c8cfd8; border-radius: 6px; background: white; font-size: 13px; user-select: none; white-space: nowrap; }
+.pesee-label input[type=checkbox] { width: 15px; height: 15px; accent-color: #8CC740; cursor: pointer; }
+.pesee-badge { display: none; background: #fff3cd; border: 1px solid #f0c040; border-radius: 20px; padding: 3px 12px; font-size: 11px; color: #7a5c00; font-weight: bold; }
+.pesee-badge.vis { display: inline-block; }
+
+/* AGENTS */
+.agent-item { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 8px 12px; border: 1px solid #dde1e5; margin-bottom: 6px; }
+.agent-item.resp { background: #eaf5d5; border-color: #8CC740; }
+.agent-avatar { width: 32px; height: 32px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.agent-name { flex: 1; font-size: 13px; font-weight: bold; }
+.agent-role-tag { font-size: 11px; color: #888; }
+
+/* LISTING TABLE */
+.listing-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+.listing-table th { padding: 8px; text-align: left; font-size: 10px; font-weight: bold; color: #29608A; border-bottom: 2px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; white-space: nowrap; }
+.listing-table th.th-cart { background: #fffbf0; color: #7a5c00; }
+.listing-table th.th-serie { background: #f0f7fd; color: #1a5276; }
+.listing-table td { padding: 6px 7px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; }
+.listing-table td.auto { background: #f8f9fa; color: #888; font-size: 11px; }
+.listing-table td.td-cart { background: #fffdf5; }
+.listing-table td.td-serie { background: #f5f9fd; }
+.listing-table td input, .listing-table td select { border: 1px solid #c8cfd8; border-radius: 4px; padding: 4px 6px; font-size: 12px; background: white; color: #404041; width: 100%; font-family: Arial, sans-serif; }
+.na-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; }
+.na-label input { width: 14px; height: 14px; accent-color: #8CC740; cursor: pointer; }
+.serie-dup { border-color: #e74c3c !important; background: #fff5f5 !important; }
+
+/* PHOTOS */
+.photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+.photo-slot { border: 2px dashed #c8cfd8; border-radius: 10px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; gap: 6px; background: #f8fafb; position: relative; overflow: hidden; }
+.photo-slot:hover { border-color: #559FD7; background: #eef5fc; }
+.photo-slot.filled { border-style: solid; border-color: #8CC740; }
+.photo-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+.photo-slot-label { font-size: 12px; color: #888; text-align: center; }
+.photo-input { display: none; }
+
+/* SIGNATURES */
+.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
+.sig-block { display: flex; flex-direction: column; gap: 8px; }
+.sig-label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; }
+.sig-box { border: 1px dashed #c8cfd8; border-radius: 8px; height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: #f4f6f8; gap: 4px; }
+.sig-box:hover { border-color: #559FD7; background: #eef5fc; }
+.sig-box.signed { border-style: solid; border-color: #8CC740; background: #f0f9e8; }
+.sig-box-label { font-size: 12px; color: #888; }
+.sig-name-display { font-size: 13px; font-weight: bold; color: #404041; text-align: center; border-top: 1px solid #dde1e5; padding-top: 6px; min-height: 22px; }
+.sig-date-display { font-size: 11px; color: #888; text-align: center; }
+.sig-missing { background: #fdf0ef; border: 1px solid #e74c3c; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #b03a2e; margin-top: 10px; display: none; }
+.sig-missing.vis { display: block; }
+
+/* SIGNATURE LINK */
+.sig-link-box { background: #e8f0f7; border: 1px solid #559FD7; border-radius: 8px; padding: 12px 16px; margin-top: 10px; display: none; }
+.sig-link-box.vis { display: block; }
+.sig-link-url { font-size: 12px; color: #559FD7; word-break: break-all; margin: 6px 0; }
+
+/* BC BANNER */
+.bc-banner { background: #e8f0f7; border: 1px solid #559FD7; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.bc-banner-info { font-size: 13px; color: #29608A; margin-bottom: 4px; }
+.bc-extras { font-size: 12px; color: #555; margin-top: 6px; border-top: 1px solid #c8cfd8; padding-top: 6px; line-height: 1.7; }
+
+/* LOT BANNER */
+.lot-banner { background: #eaf5d5; border: 1px solid #8CC740; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: none; }
+.lot-banner-text { font-size: 14px; font-weight: bold; color: #3d7a14; }
+
+/* JOURNAL */
+.j-entry { display: flex; gap: 12px; margin-bottom: 14px; }
+.j-avatar { width: 32px; height: 32px; border-radius: 50%; background: #29608A; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.j-avatar.sys { background: #888; }
+.j-bubble { flex: 1; }
+.j-meta { font-size: 11px; color: #888; margin-bottom: 3px; }
+.j-text { font-size: 13px; color: #404041; background: #f4f6f8; border-radius: 6px; padding: 8px 12px; border-left: 3px solid #dde1e5; line-height: 1.5; }
+.j-text.sys { border-left-color: #559FD7; color: #888; font-style: italic; }
+.j-text.ext { border-left-color: #e67e22; background: #fef9f0; }
+.j-text.incident { border-left-color: #e74c3c; background: #fdf0ef; }
+.jtype-btn { padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #888; font-family: Arial, sans-serif; }
+.jtype-btn.active { background: #29608A; color: white; border-color: #29608A; }
+.jtype-btn.ext-a.active { background: #e67e22; border-color: #e67e22; }
+.jtype-btn.inc-a.active { background: #e74c3c; border-color: #e74c3c; }
+
+.add-line-btn { display: inline-flex; align-items: center; gap: 6px; color: #559FD7; font-size: 13px; cursor: pointer; padding: 10px 0; background: none; border: none; font-family: Arial, sans-serif; }
+.add-line-btn:hover { text-decoration: underline; }
+.plus-c { width: 18px; height: 18px; border-radius: 50%; background: #559FD7; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; flex-shrink: 0; }
+
+@media (max-width: 700px) { .g2,.g3,.g4 { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; } .steps { display: none; } .photos-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting', 'agent_collecte'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="bons_commande.html" class="nav-link">&#128203; BC</a>
+    <a href="bld.html" class="nav-link">BLD</a>
+    <a href="dashboard_ops.html" class="nav-link">Dashboard</a>
+    <div class="user-pill" id="user-pill">Agent</div>
+  </div>
+</div>
+
+<!-- DOCBAR -->
+<div class="docbar">
+  <div class="doc-info">
+    <div>
+      <div class="doc-label">Bordereau de Suivi de D&eacute;chets</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <span style="font-size:18px;font-weight:bold;color:#29608A;">BSD</span>
+        <span class="doc-ref pending" id="doc-ref">En attente de pr&eacute;-validation</span>
+        <span class="status-chip sc-brouillon" id="status-chip">Brouillon</span>
+      </div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step active" id="s1">Brouillon</div>
+    <div class="step" id="s2">Pr&eacute;-valid&eacute;</div>
+    <div class="step" id="s3">Valid&eacute;</div>
+  </div>
+</div>
+
+<!-- ACTBAR -->
+<div class="actbar">
+  <button class="btn btn-save" onclick="sauvegarder()">&#128190; Sauvegarder</button>
+  <div class="sep"></div>
+  <button class="btn btn-prevalidate" id="btn-prevalider" onclick="prevalider()">&#10003; Pr&eacute;-valider (Agent)</button>
+  <button class="btn btn-validate" id="btn-valider" onclick="valider()" disabled>&#10003;&#10003; Valider (Ops)</button>
+  <div class="sep"></div>
+  <button class="btn btn-brouillon" id="btn-brouillon" onclick="remettreEnBrouillon()" disabled>&#8634; Brouillon</button>
+  <button class="btn btn-cancel" id="btn-annuler" onclick="annulerBSD()">&#10006; Annuler</button>
+  <div class="sep"></div>
+  <button class="btn btn-print" id="btn-print" onclick="window.print()" disabled>&#128438; Imprimer</button>
+  <button class="btn" id="btn-decomp" onclick="window.location.href='decomposition.html'" disabled style="color:#3d7a14;border-color:#8CC740;">&#9881; D&eacute;composition</button>
+</div>
+
+<div class="body">
+
+  <!-- BC BANNER -->
+  <div id="bc-banner-wrap" style="display:none;">
+    <div class="bc-banner">
+      <div class="bc-banner-info">
+        <strong id="bc-ref-disp"></strong> &mdash; <span id="bc-client-disp"></span> &mdash; <span id="bc-service-disp" style="color:#3d7a14;"></span>
+      </div>
+      <div class="bc-extras" id="bc-extras"></div>
+    </div>
+  </div>
+
+  <!-- LOT BANNER -->
+  <div class="lot-banner" id="lot-banner">
+    <span style="font-size:16px;">&#127991;</span>
+    <span class="lot-banner-text">Lot BSD : <span id="lot-val"></span></span>
+  </div>
+
+  <!-- PRODUCTEUR -->
+  <div class="card">
+    <div class="card-head ch-blue"><div class="dot-g"></div><span class="card-head-title">Producteur du d&eacute;chet</span></div>
+    <div class="card-body">
+      <div class="g2">
+        <div class="field">
+          <label>Client *</label>
+          <div class="ac-wrap">
+            <input type="text" id="inp-client" placeholder="Taper pour rechercher..." autocomplete="off" oninput="acClient(this.value)" onblur="hideAcDelay('ac-clients')">
+            <div class="ac-list" id="ac-clients"></div>
+          </div>
+          <input type="hidden" id="client-id">
+        </div>
+        <div class="field"><label>Code client</label><input readonly id="code-client" placeholder="Auto"></div>
+      </div>
+      <div class="g3">
+        <div class="field"><label>T&eacute;l&eacute;phone</label><input readonly id="tel-client" placeholder="Auto-rempli"></div>
+        <div class="field"><label>Email</label><input readonly id="email-client" placeholder="Auto-rempli"></div>
+        <div class="field">
+          <label>Site *</label>
+          <div class="ac-wrap">
+            <input type="text" id="inp-site" placeholder="Taper ou s&eacute;lectionner..." autocomplete="off" oninput="acSite(this.value)" onblur="hideAcDelay('ac-sites')">
+            <div class="ac-list" id="ac-sites"></div>
+          </div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>Repr&eacute;sentant client</label>
+          <div class="ac-wrap">
+            <input type="text" id="inp-rep" placeholder="Taper ou s&eacute;lectionner..." autocomplete="off" oninput="acRep(this.value)" onblur="hideAcDelay('ac-reps')">
+            <div class="ac-list" id="ac-reps"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>T&eacute;l. repr&eacute;sentant</label>
+          <input readonly id="tel-rep" placeholder="Auto-rempli">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Email repr&eacute;sentant</label>
+        <input readonly id="email-rep" placeholder="Auto-rempli">
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLECTE -->
+  <div class="card">
+    <div class="card-head ch-green"><div class="dot-b"></div><span class="card-head-title">Informations de collecte</span></div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field">
+          <label>Date de pr&eacute;-validation *</label>
+          <input type="datetime-local" id="date-collecte">
+          <span style="font-size:11px;color:#888;">Date et heure de la collecte terrain</span>
+        </div>
+        <div class="field"><label>R&eacute;f. Odoo (SO)</label><input type="text" id="ref-so" placeholder="SO-2026-XXXX" readonly></div>
+        <div class="field"><label>Type de service</label><input type="text" id="type-service" placeholder="D&eacute;duit du BC" readonly></div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>Num&eacute;ro de lot BSD</label>
+          <input readonly id="num-lot" placeholder="Attribu&eacute; &agrave; la pr&eacute;-validation">
+          <span style="font-size:11px;color:#888;">1 lot unique — attribu&eacute; automatiquement</span>
+        </div>
+        <div class="field">
+          <label>V&eacute;hicule (immatriculation)</label>
+          <input type="text" id="vehicule-immat" placeholder="ex: AA-927-SZ">
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Nom du chauffeur</label><input type="text" id="chauffeur-nom" placeholder="Nom et pr&eacute;nom"></div>
+        <div class="field"><label>T&eacute;l. chauffeur</label><input type="text" id="chauffeur-tel" placeholder="ex: 77 000 00 00"></div>
+      </div>
+
+      <div class="sub-title">&#128119; Agents affect&eacute;s</div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px;">&#9733; Premier agent = responsable. L'utilisateur connect&eacute; est ajout&eacute; par d&eacute;faut.</div>
+      <div id="agents-list"></div>
+      <button class="add-line-btn" onclick="ajouterAgent()"><span class="plus-c">+</span> Ajouter un agent</button>
+    </div>
+  </div>
+
+  <!-- ONGLETS -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('ops',this)">&#128203; Op&eacute;rations</button>
+      <button class="tab" onclick="showTab('listing',this)">&#128196; Listing <span id="listing-count" style="background:#559FD7;color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span></button>
+      <button class="tab" onclick="showTab('photos',this)">&#128247; Photos</button>
+      <button class="tab" onclick="showTab('comments',this)">&#128172; Commentaires <span id="comment-badge" style="background:#e74c3c;color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;display:none;">!</span></button>
+    </div>
+
+    <!-- OPÉRATIONS -->
+    <div class="tab-content active" id="tab-ops">
+      <div id="bc-prefill-note" style="background:#e8f0f7;border:1px solid #559FD7;border-radius:6px;padding:8px 12px;font-size:12px;color:#1a4a6e;margin-bottom:12px;display:none;">
+        &#128203; Quantit&eacute;s pr&eacute;vues charg&eacute;es depuis le bon de commande. Remplissez les quantit&eacute;s r&eacute;elles.
+      </div>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">Colonnes bleues = pr&eacute;vu (BC). Colonnes vertes = r&eacute;el collect&eacute;.</p>
+      <div style="overflow-x:auto;">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th class="th-art" style="width:25%">Article</th>
+              <th class="th-prev" style="width:12%">Qt&eacute; pr&eacute;vue</th>
+              <th class="th-prev" style="width:10%">Unit&eacute;</th>
+              <th class="th-reel" style="width:12%">Qt&eacute; r&eacute;elle *</th>
+              <th class="th-ecart" style="width:10%">Ecart</th>
+              <th class="th-ecart" style="width:13%">Statut</th>
+              <th class="th-art" style="width:5%"></th>
+            </tr>
+          </thead>
+          <tbody id="ops-tbody"></tbody>
+        </table>
+      </div>
+      <button class="add-line-btn" id="btn-add-article" onclick="ajouterLigneOps()"><span class="plus-c">+</span> Ajouter un article</button>
+
+      <div class="alert-ecart ae-warn vis" id="alert-moins" style="display:none;">
+        <strong>&#9888; Quantit&eacute; inf&eacute;rieure au pr&eacute;vu</strong>
+        <ul id="list-moins" style="margin:6px 0 0 18px;font-size:12px;"></ul>
+        <div style="margin-top:6px;font-size:12px;">Un commentaire est requis dans l'onglet Commentaires.</div>
+      </div>
+      <div class="alert-ecart ae-error" id="alert-plus" style="display:none;">
+        <strong>&#128308; Quantit&eacute; sup&eacute;rieure — accord client requis</strong>
+        <ul id="list-plus" style="margin:6px 0 0 18px;font-size:12px;"></ul>
+      </div>
+
+      <!-- POIDS -->
+      <div class="poids-section">
+        <div style="font-size:12px;font-weight:bold;color:#29608A;text-transform:uppercase;margin-bottom:10px;">Poids total</div>
+        <div class="poids-row">
+          <div class="poids-field">
+            <label>Poids pr&eacute;vu (kg)</label>
+            <input type="number" id="poids-prevu" step="0.01" readonly style="background:#f4f6f8;color:#888;" placeholder="—">
+          </div>
+          <div class="poids-field">
+            <label>Poids r&eacute;el (kg)</label>
+            <input type="number" id="poids-reel" step="0.01" placeholder="0,00" id="poids-reel-inp">
+          </div>
+          <label class="pesee-label">
+            <input type="checkbox" id="cb-pesee" onchange="togglePesee()"> Pes&eacute;e impossible sur site
+          </label>
+          <span class="pesee-badge" id="pesee-badge">&#128203; Pes&eacute;e &agrave; l'entrep&ocirc;t</span>
+        </div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="sub-title">Signatures</div>
+      <div class="sig-grid">
+        <div class="sig-block">
+          <div class="sig-label">Signature agent SetTIC</div>
+          <div class="sig-box" id="sig-agent" onclick="signer('agent')">
+            <span style="font-size:20px;">&#9998;</span>
+            <span class="sig-box-label">Cliquer pour signer</span>
+          </div>
+          <div class="sig-name-display" id="sig-agent-name"></div>
+          <div class="sig-date-display" id="sig-agent-date"></div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-label">Signature client</div>
+          <div class="sig-box" id="sig-client" onclick="signer('client')">
+            <span style="font-size:20px;">&#9998;</span>
+            <span class="sig-box-label">Cliquer pour signer</span>
+          </div>
+          <div class="sig-name-display" id="sig-client-name"></div>
+          <div class="sig-date-display" id="sig-client-date"></div>
+          <!-- LIEN SIGNATURE -->
+          <div class="sig-link-box" id="sig-link-box">
+            <div style="font-size:12px;font-weight:bold;color:#29608A;margin-bottom:4px;">&#128233; Lien de signature envoy&eacute; au client</div>
+            <div class="sig-link-url" id="sig-link-url"></div>
+            <div style="font-size:11px;color:#888;">Le client peut signer depuis son t&eacute;l&eacute;phone ou ordinateur</div>
+          </div>
+        </div>
+      </div>
+      <div class="sig-missing" id="sig-missing">
+        &#9888; Signature client manquante. Veuillez ajouter un commentaire expliquant la raison et envoyer un lien de signature.
+      </div>
+    </div>
+
+    <!-- LISTING -->
+    <div class="tab-content" id="tab-listing">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:bold;color:#29608A;">Listing d&eacute;taill&eacute; des &eacute;quipements</div>
+          <div style="font-size:12px;color:#888;">Saisir apr&egrave;s la collecte par la charg&eacute;e des op&eacute;rations</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" onclick="alert('Export Excel...')">&#128190; Excel</button>
+          <button class="btn btn-save" onclick="alert('Export PDF client...')">&#128196; PDF client</button>
+        </div>
+      </div>
+      <div style="background:#fff8e6;border:1px solid #f0c040;border-radius:6px;padding:8px 12px;font-size:12px;color:#7a5c00;margin-bottom:12px;">
+        &#9888; N&deg; s&eacute;rie saisi → Qt&eacute; = 1 et unique dans le syst&egrave;me. Sans N&deg; s&eacute;rie → cocher N/A → Qt&eacute; libre.
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="listing-table">
+          <thead>
+            <tr>
+              <th style="width:28px;">#</th>
+              <th style="width:72px;">Date</th>
+              <th style="width:36px;">Mois</th>
+              <th style="width:34px;">Trim.</th>
+              <th style="width:105px;">Type mat&eacute;riel</th>
+              <th style="width:75px;">Marque</th>
+              <th style="width:85px;">Mod&egrave;le</th>
+              <th style="width:90px;" class="th-cart">Caract&eacute;ristique</th>
+              <th style="width:100px;" class="th-serie">N&deg; s&eacute;rie</th>
+              <th style="width:32px;" class="th-serie">N/A</th>
+              <th style="width:48px;">Qt&eacute;</th>
+              <th style="width:22px;"></th>
+            </tr>
+          </thead>
+          <tbody id="listing-tbody"></tbody>
+        </table>
+      </div>
+      <button class="add-line-btn" onclick="ajouterLigneListing()"><span class="plus-c">+</span> Ajouter un &eacute;quipement</button>
+      <div style="text-align:right;font-size:13px;color:#888;margin-top:8px;">Total : <strong id="total-equip" style="color:#29608A;">0</strong> &eacute;quipements</div>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="tab-content" id="tab-photos">
+      <div style="font-size:13px;font-weight:bold;color:#29608A;margin-bottom:4px;">Photos de la collecte</div>
+      <div style="font-size:12px;color:#888;margin-bottom:14px;">Prenez des photos avant / pendant / apr&egrave;s la collecte. Visibles dans le rapport client.</div>
+      <div class="photos-grid" id="photos-grid">
+        <div class="photo-slot" onclick="document.getElementById('photo-input-0').click()">
+          <input type="file" accept="image/*" class="photo-input" id="photo-input-0" onchange="afficherPhoto(this,0)">
+          <span style="font-size:24px;">&#128247;</span>
+          <span class="photo-slot-label">Photo avant collecte</span>
+        </div>
+        <div class="photo-slot" onclick="document.getElementById('photo-input-1').click()">
+          <input type="file" accept="image/*" class="photo-input" id="photo-input-1" onchange="afficherPhoto(this,1)">
+          <span style="font-size:24px;">&#128247;</span>
+          <span class="photo-slot-label">Photo pendant collecte</span>
+        </div>
+        <div class="photo-slot" onclick="document.getElementById('photo-input-2').click()">
+          <input type="file" accept="image/*" class="photo-input" id="photo-input-2" onchange="afficherPhoto(this,2)">
+          <span style="font-size:24px;">&#128247;</span>
+          <span class="photo-slot-label">Photo apr&egrave;s collecte</span>
+        </div>
+      </div>
+      <button class="add-line-btn" onclick="ajouterSlotPhoto()" style="margin-top:8px;"><span class="plus-c">+</span> Ajouter une photo</button>
+    </div>
+
+    <!-- COMMENTAIRES -->
+    <div class="tab-content" id="tab-comments">
+      <div style="margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:bold;color:#29608A;margin-bottom:4px;">Journal &amp; Commentaires</div>
+        <div style="font-size:12px;color:#888;">Journal interne = confidentiel. Message CLIENT = visible dans le portail client.</div>
+      </div>
+      <div id="journal-entries"></div>
+      <div style="border-top:1px solid #dde1e5;padding-top:14px;display:flex;gap:10px;align-items:flex-start;margin-top:14px;">
+        <div class="j-avatar" id="j-avatar">BT</div>
+        <div style="flex:1;">
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+            <button class="jtype-btn active" onclick="setJType('interne',this)">Note interne</button>
+            <button class="jtype-btn inc-a" onclick="setJType('incident',this)">&#9888; Incident</button>
+            <button class="jtype-btn ext-a" onclick="setJType('externe',this)">Message CLIENT</button>
+          </div>
+          <textarea id="j-input" rows="3" placeholder="Ajouter un commentaire..." style="width:100%;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;resize:vertical;"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+            <button class="btn btn-save" onclick="envoyerJournal()">Envoyer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DONNÉES
+// ============================================================
+var CLIENTS_DB = [
+  { id:'tis', nom:'TRANSPORT IBRAHIMA SAKHO', code:'TIS', tel:'769295255', email:'contact@tis.sn',
+    sites:[{nom:'Route de Rufisque',id:'tis-rr'},{nom:'Pikine',id:'tis-pk'}],
+    reps:[{nom:'Ibrahima SAKHO',tel:'769295255',email:'sakho@tis.sn'},{nom:'Mamadou BALDE',tel:'77 000 00 01',email:'balde@tis.sn'}] },
+  { id:'orange', nom:'Orange Sénégal', code:'ORG', tel:'33 869 30 00', email:'contact@orange.sn',
+    sites:[{nom:'Almadies',id:'org-al'},{nom:'Plateau',id:'org-pl'},{nom:'Rufisque',id:'org-rf'}],
+    reps:[{nom:'Aminata FALL',tel:'77 100 00 01',email:'a.fall@orange.sn'},{nom:'Cheikh DIOP',tel:'77 100 00 02',email:'c.diop@orange.sn'}] },
+  { id:'sonatel', nom:'Sonatel', code:'SON', tel:'33 839 90 00', email:'contact@sonatel.sn',
+    sites:[{nom:'Plateau',id:'son-pl'},{nom:'Liberté 6',id:'son-l6'}],
+    reps:[{nom:'Moussa NDIAYE',tel:'77 200 00 01',email:'m.ndiaye@sonatel.sn'},{nom:'Aissatou BA',tel:'77 200 00 02',email:'a.ba@sonatel.sn'}] },
+  { id:'egmt', nom:'EGMT', code:'EGM', tel:'33 821 00 00', email:'contact@egmt.sn',
+    sites:[{nom:'Diamniadio',id:'egm-di'},{nom:'Almadies',id:'egm-al'}],
+    reps:[{nom:'Omar SARR',tel:'77 300 00 01',email:'o.sarr@egmt.sn'},{nom:'Ndèye SECK',tel:'77 300 00 02',email:'n.seck@egmt.sn'}] },
+  { id:'gmd', nom:'GMD', code:'GMD', tel:'33 800 00 00', email:'contact@gmd.sn',
+    sites:[{nom:'Plateau',id:'gmd-pl'}],
+    reps:[{nom:'Contact GMD',tel:'33 800 00 00',email:'contact@gmd.sn'}] },
+  { id:'seneau', nom:'SENEAU', code:'SEN', tel:'33 800 00 01', email:'contact@seneau.sn',
+    sites:[{nom:'Diamniadio',id:'sen-di'}],
+    reps:[{nom:'Contact SENEAU',tel:'33 800 00 01',email:'contact@seneau.sn'}] },
+];
+
+var AGENTS_DB = [
+  { id:'woulare', nom:'Ibrahima WOULARE', initiales:'IW', color:'#29608A' },
+  { id:'tapha',   nom:'Tapha',            initiales:'TA', color:'#3d7a14' },
+  { id:'adama',   nom:'ADAMA NGUER',      initiales:'AN', color:'#1a5276' },
+  { id:'ahmed',   nom:'Ahmed DIAGNE',     initiales:'AD', color:'#7d3c98' },
+];
+
+var TYPES_MATERIEL = ['Ordinateur portable','Unité centrale','Ecran','Imprimante','Copieur',
+  'Téléphone mobile','Tablette','Serveur','UPS / Onduleur','Disque dur',
+  'Cartouche encre','Cartouche toner','Toner bidon','Pile / Batterie','Autre'];
+var ARTICLES = ['Ordinateurs portables','Unités centrales','Ecrans','Imprimantes','Copieurs',
+  'Téléphones mobiles','Tablettes','Serveurs','Disques durs','Cartouches encre',
+  'Cartouches toner','Piles / Batteries','Archives papier','Déchets ménagers','Plastique','Métaux ferreux','Autre'];
+var UNITES = ['unité','kg','tonne'];
+var MARQUES = ['HP','Dell','Lenovo','Apple','Samsung','Canon','Epson','Xerox','Brother','Acer','Asus','Autre'];
+var MODELES = ['EliteBook 840','ProBook 450','OptiPlex 7050','Latitude E5470','ThinkPad T480','MacBook Pro','Galaxy A52','LBP6030','CF280A'];
+var CARACT = ['Toner','Toner Bidon','Jet d\'encre'];
+var SERIES = ['DL7050-2341','HP840-5522','CN6030-8891'];
+var allMarques = MARQUES.slice();
+var allModeles = MODELES.slice();
+var jType = 'interne';
+var bsdStatut = 'brouillon';
+var clientSelectionne = null;
+var photoCount = 3;
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = function() {
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('date-collecte').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+
+  var user = localStorage.getItem('wastify_user') || 'Agent';
+  var role = localStorage.getItem('wastify_role') || 'agent';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+  var init = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  document.getElementById('j-avatar').textContent = init;
+
+  // Agent connecté = responsable par défaut
+  ajouterAgent(user, init, true);
+  ajouterLigneOps();
+  addJAuto('BSD créé par ' + user);
+
+  // Adapter les boutons selon le profil
+  if (role === 'agent') {
+    document.getElementById('btn-valider').style.display = 'none';
+  } else {
+    // Ops/Manager peut valider
+  }
+
+  // Charger BC si disponible
+  var bc = localStorage.getItem('wastify_bc');
+  if (bc) {
+    try { chargerDepuisBC(JSON.parse(bc)); localStorage.removeItem('wastify_bc'); } catch(e){}
+  }
+};
+
+// ============================================================
+// AUTOCOMPLETE CLIENT
+// ============================================================
+function acClient(val) {
+  var list = document.getElementById('ac-clients');
+  if (!val || val.length < 1) { list.classList.remove('open'); return; }
+  var matches = CLIENTS_DB.filter(function(c){ return c.nom.toLowerCase().includes(val.toLowerCase()); });
+  list.innerHTML = matches.map(function(c){
+    return '<div class="ac-item" onmousedown="selectClient(\''+c.id+'\')">' +
+      '<div class="ac-item-name">'+c.nom+'</div>' +
+      '<div class="ac-item-sub">'+c.tel+' — '+c.email+'</div></div>';
+  }).join('') + (matches.length === 0 ? '<div class="ac-item" style="color:#888;">Aucun client trouvé</div>' : '');
+  list.classList.add('open');
+}
+
+function selectClient(id) {
+  var c = CLIENTS_DB.find(function(x){return x.id===id;});
+  if (!c) return;
+  clientSelectionne = c;
+  document.getElementById('inp-client').value = c.nom;
+  document.getElementById('client-id').value = c.id;
+  document.getElementById('code-client').value = c.code;
+  document.getElementById('tel-client').value = c.tel;
+  document.getElementById('email-client').value = c.email;
+  document.getElementById('ac-clients').classList.remove('open');
+
+  // Charger sites et reps
+  document.getElementById('inp-site').value = '';
+  document.getElementById('inp-rep').value = '';
+  document.getElementById('tel-rep').value = '';
+  document.getElementById('email-rep').value = '';
+}
+
+function acSite(val) {
+  if (!clientSelectionne) { alert('Sélectionnez d\'abord un client.'); document.getElementById('inp-site').value=''; return; }
+  var list = document.getElementById('ac-sites');
+  var sites = clientSelectionne.sites.filter(function(s){ return s.nom.toLowerCase().includes(val.toLowerCase()); });
+  list.innerHTML = sites.map(function(s){
+    return '<div class="ac-item" onmousedown="document.getElementById(\'inp-site\').value=\''+s.nom+'\';document.getElementById(\'ac-sites\').classList.remove(\'open\');">' +
+      '<div class="ac-item-name">'+s.nom+'</div></div>';
+  }).join('') + (sites.length===0?'<div class="ac-item" style="color:#888;">Aucun site pour ce client</div>':'');
+  list.classList.toggle('open', val.length > 0);
+}
+
+function acRep(val) {
+  if (!clientSelectionne) { return; }
+  var list = document.getElementById('ac-reps');
+  var reps = clientSelectionne.reps.filter(function(r){ return r.nom.toLowerCase().includes(val.toLowerCase()); });
+  list.innerHTML = reps.map(function(r){
+    return '<div class="ac-item" onmousedown="selectRep(\''+r.nom+'\',\''+r.tel+'\',\''+r.email+'\')">' +
+      '<div class="ac-item-name">'+r.nom+'</div>' +
+      '<div class="ac-item-sub">'+r.tel+' — '+r.email+'</div></div>';
+  }).join('') + (reps.length===0?'<div class="ac-item" style="color:#888;">Aucun contact</div>':'');
+  list.classList.toggle('open', val.length > 0);
+}
+
+function selectRep(nom, tel, email) {
+  document.getElementById('inp-rep').value = nom;
+  document.getElementById('tel-rep').value = tel;
+  document.getElementById('email-rep').value = email;
+  document.getElementById('ac-reps').classList.remove('open');
+}
+
+function hideAcDelay(id) {
+  setTimeout(function(){ document.getElementById(id).classList.remove('open'); }, 200);
+}
+
+// ============================================================
+// AGENTS
+// ============================================================
+function ajouterAgent(nomAgent, initiales, isResp) {
+  var list = document.getElementById('agents-list');
+  var isFirst = isResp || list.children.length === 0;
+
+  // Sélect agents
+  var aO = AGENTS_DB.map(function(a){
+    return '<option value="'+a.id+'">'+a.nom+'</option>';
+  }).join('');
+
+  var div = document.createElement('div');
+  div.className = 'agent-item' + (isFirst ? ' resp' : '');
+  var color = isFirst ? '#3d7a14' : '#29608A';
+  var initDisp = initiales || '?';
+  if (nomAgent) {
+    // Agent pré-rempli (connecté)
+    div.innerHTML =
+      '<div class="agent-avatar" style="background:'+color+';">'+initDisp+'</div>'+
+      '<div class="agent-name" style="color:'+(isFirst?'#3d7a14':'#404041')+';">'+nomAgent+'</div>'+
+      '<span class="agent-role-tag">'+(isFirst?'★ Responsable':'Agent')+'</span>'+
+      (isFirst?'':'<button onclick="this.closest(\'.agent-item\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:16px;">&#215;</button>');
+  } else {
+    div.innerHTML =
+      '<div class="agent-avatar" style="background:'+color+';">?</div>'+
+      '<div style="flex:1;"><select class="agent-sel" onchange="updateAgentAvatar(this)" style="border:1px solid #c8cfd8;border-radius:6px;padding:6px 10px;font-size:13px;font-family:Arial,sans-serif;width:100%;">'+aO+'</select></div>'+
+      '<span class="agent-role-tag">'+(isFirst?'★ Responsable':'Agent')+'</span>'+
+      '<button onclick="this.closest(\'.agent-item\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:16px;">&#215;</button>';
+  }
+  list.appendChild(div);
+}
+
+function updateAgentAvatar(sel) {
+  var a = AGENTS_DB.find(function(x){return x.id===sel.value;});
+  if (a) sel.closest('.agent-item').querySelector('.agent-avatar').textContent = a.initiales;
+}
+
+// ============================================================
+// OPÉRATIONS
+// ============================================================
+function ajouterLigneOps(article, qtePrevu, unite) {
+  var tbody = document.getElementById('ops-tbody');
+  var aO = ARTICLES.map(function(a){return '<option'+(a===article?' selected':'')+'>'+a+'</option>';}).join('');
+  var uO = UNITES.map(function(u){return '<option'+(u===unite?' selected':'')+'>'+u+'</option>';}).join('');
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><select class="art-sel">'+aO+'</select></td>'+
+    '<td class="bg-prev"><input type="number" class="qte-prev" min="0" step="0.01" placeholder="—" value="'+(qtePrevu||'')+'"></td>'+
+    '<td class="bg-prev"><select class="unite-sel">'+uO+'</select></td>'+
+    '<td class="bg-reel"><input type="number" class="qte-reel" min="0" step="0.01" placeholder="0" onchange="calculerEcart(this)"></td>'+
+    '<td class="ecart-ok">—</td>'+
+    '<td>—</td>'+
+    '<td><button onclick="this.closest(\'tr\').remove();verifierEcarts();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:15px;">&#215;</button></td>';
+  tbody.appendChild(tr);
+}
+
+function calculerEcart(inp) {
+  var tr = inp.closest('tr');
+  var prev = parseFloat(tr.querySelector('.qte-prev').value) || 0;
+  var reel = parseFloat(inp.value) || 0;
+  var ecartTd = tr.cells[4];
+  var statutTd = tr.cells[5];
+  var ecart = reel - prev;
+  if (prev === 0) { ecartTd.textContent='—'; ecartTd.className='ecart-ok'; statutTd.textContent='—'; }
+  else if (ecart === 0) { ecartTd.textContent='0'; ecartTd.className='ecart-ok'; statutTd.innerHTML='<span style="color:#3d7a14;font-size:12px;">✓ OK</span>'; }
+  else if (ecart < 0) { ecartTd.textContent=ecart; ecartTd.className='ecart-neg'; statutTd.innerHTML='<span style="color:#7a5c00;font-size:12px;">⚠ Commentaire</span>'; document.getElementById('comment-badge').style.display='inline'; }
+  else { ecartTd.textContent='+'+ecart; ecartTd.className='ecart-pos'; statutTd.innerHTML='<span style="color:#b03a2e;font-size:12px;">🔴 Accord client</span>'; }
+  verifierEcarts();
+}
+
+function verifierEcarts() {
+  var moins=[], plus=[];
+  document.querySelectorAll('#ops-tbody tr').forEach(function(tr){
+    var art = tr.querySelector('.art-sel').value;
+    var prev = parseFloat(tr.querySelector('.qte-prev').value)||0;
+    var reel = parseFloat(tr.querySelector('.qte-reel').value)||0;
+    if (prev>0&&reel>0) {
+      if (reel<prev) moins.push(art+' : prévu '+prev+', réel '+reel);
+      if (reel>prev) plus.push(art+' : prévu '+prev+', réel '+reel);
+    }
+  });
+  var am=document.getElementById('alert-moins'), ap=document.getElementById('alert-plus');
+  am.style.display=moins.length>0?'block':'none';
+  ap.style.display=plus.length>0?'block':'none';
+  document.getElementById('list-moins').innerHTML=moins.map(function(l){return '<li>'+l+'</li>';}).join('');
+  document.getElementById('list-plus').innerHTML=plus.map(function(l){return '<li>'+l+'</li>';}).join('');
+}
+
+function togglePesee() {
+  var cb=document.getElementById('cb-pesee');
+  var inp=document.getElementById('poids-reel');
+  var badge=document.getElementById('pesee-badge');
+  inp.disabled=cb.checked; inp.style.background=cb.checked?'#f4f6f8':'white';
+  badge.classList.toggle('vis',cb.checked);
+}
+
+// ============================================================
+// LISTING
+// ============================================================
+function ajouterLigneListing() {
+  var tbody=document.getElementById('listing-tbody');
+  var now=new Date();
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var date=pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear();
+  var mois=['Jan','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][now.getMonth()];
+  var trim=now.getMonth()<3?'T1':(now.getMonth()<6?'T2':(now.getMonth()<9?'T3':'T4'));
+  var tO=TYPES_MATERIEL.map(function(t){return '<option>'+t+'</option>';}).join('');
+  var cO=CARACT.map(function(c){return '<option>'+c+'</option>';}).join('');
+  var tr=document.createElement('tr');
+  tr.innerHTML=
+    '<td class="auto" style="text-align:center;">'+(tbody.rows.length+1)+'</td>'+
+    '<td class="auto">'+date+'</td>'+
+    '<td class="auto">'+mois+'</td>'+
+    '<td class="auto">'+trim+'</td>'+
+    '<td><select class="type-sel" onchange="toggleCart(this)">'+tO+'</select></td>'+
+    '<td><input type="text" class="marque-inp" placeholder="Marque" list="marques-list"></td>'+
+    '<td><input type="text" class="modele-inp" placeholder="Modèle" list="modeles-list"></td>'+
+    '<td class="td-cart"><select class="caract-sel" style="opacity:0.3;pointer-events:none;">'+cO+'</select></td>'+
+    '<td class="td-serie"><input type="text" class="serie-inp" placeholder="N° série" oninput="checkSerie(this)" onchange="saveSerie(this)"></td>'+
+    '<td class="td-serie" style="text-align:center;"><label class="na-label"><input type="checkbox" onchange="toggleNA(this)"></label></td>'+
+    '<td><input type="number" class="qte-inp" value="1" min="1" max="1" style="width:45px;" onchange="updateEquipCount()"></td>'+
+    '<td><button onclick="this.closest(\'tr\').remove();updateEquipCount();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:14px;">✕</button></td>';
+  tbody.appendChild(tr);
+  updateEquipCount();
+}
+
+function toggleCart(sel) {
+  var tr=sel.closest('tr');
+  var isCart=sel.value.toLowerCase().includes('cartouche')||sel.value.toLowerCase().includes('toner');
+  var cs=tr.querySelector('.caract-sel');
+  cs.style.opacity=isCart?'1':'0.3'; cs.style.pointerEvents=isCart?'auto':'none';
+}
+
+function toggleNA(cb) {
+  var tr=cb.closest('tr');
+  var si=tr.querySelector('.serie-inp'), qi=tr.querySelector('.qte-inp');
+  si.value=cb.checked?'N/A':''; si.disabled=cb.checked; si.style.background=cb.checked?'#f4f6f8':'white';
+  if(cb.checked){qi.removeAttribute('max');} else{qi.value='1';qi.max='1';}
+  updateEquipCount();
+}
+
+function checkSerie(inp) {
+  var v=inp.value.trim();
+  if(!v||v==='N/A'){inp.classList.remove('serie-dup');return;}
+  inp.closest('tr').querySelector('.qte-inp').value='1';
+  inp.closest('tr').querySelector('.qte-inp').max='1';
+  inp.classList.toggle('serie-dup', SERIES.indexOf(v)!==-1);
+  if(SERIES.indexOf(v)!==-1) inp.title='ATTENTION: numéro de série déjà enregistré!';
+  else inp.title='';
+}
+
+function saveSerie(inp) {
+  var v=inp.value.trim();
+  if(v&&v!=='N/A'&&SERIES.indexOf(v)===-1) SERIES.push(v);
+}
+
+function updateEquipCount() {
+  var total=0;
+  document.querySelectorAll('.qte-inp').forEach(function(i){total+=parseInt(i.value)||0;});
+  document.getElementById('total-equip').textContent=total;
+  document.getElementById('listing-count').textContent=document.getElementById('listing-tbody').rows.length;
+}
+
+// ============================================================
+// PHOTOS
+// ============================================================
+function afficherPhoto(inp, idx) {
+  var slot=inp.closest('.photo-slot');
+  var file=inp.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    slot.classList.add('filled');
+    var img=document.createElement('img');
+    img.src=e.target.result;
+    slot.innerHTML='';
+    slot.appendChild(img);
+    var btn=document.createElement('button');
+    btn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:14px;';
+    btn.textContent='✕';
+    btn.onclick=function(e){e.stopPropagation();slot.classList.remove('filled');slot.innerHTML='<span style="font-size:24px;">📷</span><span class="photo-slot-label">Ajouter photo</span>';};
+    slot.appendChild(btn);
+  };
+  reader.readAsDataURL(file);
+}
+
+function ajouterSlotPhoto() {
+  var grid=document.getElementById('photos-grid');
+  var slot=document.createElement('div');
+  slot.className='photo-slot';
+  var id='photo-input-'+photoCount;
+  slot.innerHTML='<input type="file" accept="image/*" class="photo-input" id="'+id+'" onchange="afficherPhoto(this,'+photoCount+')"><span style="font-size:24px;">📷</span><span class="photo-slot-label">Photo supplémentaire</span>';
+  slot.onclick=function(){document.getElementById(id).click();};
+  grid.appendChild(slot);
+  photoCount++;
+}
+
+// ============================================================
+// SIGNATURES
+// ============================================================
+var sigAgent=false, sigClient=false;
+
+function signer(type) {
+  var user=localStorage.getItem('wastify_user')||'Agent SetTIC';
+  var nom=type==='agent'?user:(document.getElementById('inp-rep').value||'Représentant client');
+  var couleur=type==='agent'?'#29608A':'#3d7a14';
+  var box=document.getElementById('sig-'+type);
+  box.classList.add('signed');
+  box.innerHTML='<svg width="120" height="55" viewBox="0 0 120 55"><path d="M10,42 Q25,8 45,28 Q60,48 80,15 Q95,2 112,22" stroke="'+couleur+'" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>';
+  document.getElementById('sig-'+type+'-name').textContent=nom;
+  document.getElementById('sig-'+type+'-date').innerHTML=formatDate(new Date());
+  if(type==='agent') sigAgent=true;
+  else sigClient=true;
+  document.getElementById('sig-missing').classList.remove('vis');
+  addJAuto('Signature '+( type==='agent'?'agent SetTIC':'client')+' : '+nom);
+}
+
+function envoyerLienSignature() {
+  var client=document.getElementById('inp-client').value||'client';
+  var bsdRef=document.getElementById('doc-ref').textContent;
+  var url='https://settic-app.github.io/wastify/sign?bsd='+encodeURIComponent(bsdRef)+'&token='+Math.random().toString(36).substr(2,8);
+  document.getElementById('sig-link-url').textContent=url;
+  document.getElementById('sig-link-box').classList.add('vis');
+  addJAuto('Lien de signature envoyé au client '+client+' : '+url);
+  alert('Lien de signature envoyé !\n\nLe client recevra un email avec ce lien pour signer depuis son téléphone ou ordinateur.');
+}
+
+// ============================================================
+// WORKFLOW VALIDATION
+// ============================================================
+function prevalider() {
+  var client=document.getElementById('inp-client').value.trim();
+  if(!client){alert('Sélectionnez un client avant de pré-valider.');return;}
+
+  // Vérifier signature client
+  if(!sigClient) {
+    document.getElementById('sig-missing').classList.add('vis');
+    showTab('ops', document.querySelector('.tab'));
+    var conf=confirm(
+      'ATTENTION : Signature client manquante.\n\n'+
+      'Voulez-vous :\n'+
+      '1. Envoyer un lien de signature au client\n'+
+      '2. Continuer sans signature (commentaire obligatoire)\n\n'+
+      'Cliquez OK pour envoyer le lien, Annuler pour continuer sans.'
+    );
+    if(conf) { envoyerLienSignature(); return; }
+    // Commentaire obligatoire
+    var raison=prompt('Raison de l\'absence de signature client (obligatoire) :');
+    if(!raison||!raison.trim()){alert('Un commentaire est obligatoire si la signature client est absente.');return;}
+    addJournal('incident', 'Pré-validation sans signature client. Raison : '+raison);
+    document.getElementById('comment-badge').style.display='inline';
+  }
+
+  // Attribuer numéro BSD et lot
+  var now=new Date();
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var num='DIA/BSD/'+now.getFullYear()+'/0'+(5000+Math.floor(Math.random()*100));
+  var lot='N°/'+pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear()+'/BSD/'+num.split('/').pop();
+
+  document.getElementById('doc-ref').textContent=num;
+  document.getElementById('doc-ref').classList.remove('pending');
+  document.getElementById('num-lot').value=lot;
+  document.getElementById('lot-val').textContent=lot;
+  document.getElementById('lot-banner').style.display='flex';
+  document.getElementById('status-chip').textContent='Pré-validé';
+  document.getElementById('status-chip').className='status-chip sc-prevalidé';
+  document.getElementById('s1').className='step done';
+  document.getElementById('s2').className='step active';
+  document.getElementById('btn-prevalider').disabled=true;
+  document.getElementById('btn-prevalider').textContent='✓ Pré-validé';
+  document.getElementById('btn-valider').disabled=false;
+  document.getElementById('btn-brouillon').disabled=false;
+  document.getElementById('btn-print').disabled=false;
+  bsdStatut='prevalide';
+  addJAuto('BSD pré-validé — Réf: '+num+' — Lot: '+lot+' — Par: '+(localStorage.getItem('wastify_user')||'Agent'));
+  alert('BSD pré-validé !\nRéférence : '+num+'\nLot BSD : '+lot);
+}
+
+function valider() {
+  if(bsdStatut!=='prevalide'){alert('Le BSD doit être pré-validé d\'abord.');return;}
+  if(!sigClient){
+    alert('La validation définitive nécessite la signature du client.');return;
+  }
+  document.getElementById('status-chip').textContent='Validé';
+  document.getElementById('status-chip').className='status-chip sc-validé';
+  document.getElementById('s2').className='step done';
+  document.getElementById('s3').className='step active';
+  document.getElementById('btn-valider').disabled=true;
+  document.getElementById('btn-valider').textContent='✓✓ Validé';
+  document.getElementById('btn-decomp').disabled=false;
+  bsdStatut='valide';
+  addJAuto('BSD validé définitivement par '+(localStorage.getItem('wastify_user')||'Chargée ops'));
+  alert('BSD validé !');
+}
+
+function remettreEnBrouillon() {
+  if(!confirm('Remettre ce BSD en brouillon ? Les modifications seront possibles.')) return;
+  document.getElementById('doc-ref').classList.add('pending');
+  document.getElementById('status-chip').textContent='Brouillon';
+  document.getElementById('status-chip').className='status-chip sc-brouillon';
+  document.getElementById('s1').className='step active';
+  document.getElementById('s2').className='step';
+  document.getElementById('s3').className='step';
+  document.getElementById('btn-prevalider').disabled=false;
+  document.getElementById('btn-prevalider').textContent='✓ Pré-valider (Agent)';
+  document.getElementById('btn-valider').disabled=true;
+  document.getElementById('btn-brouillon').disabled=true;
+  bsdStatut='brouillon';
+  addJAuto('BSD remis en brouillon par '+(localStorage.getItem('wastify_user')||'Ops'));
+}
+
+function annulerBSD() {
+  if(!confirm('Annuler ce BSD ? Cette action sera tracée.')) return;
+  var raison=prompt('Raison de l\'annulation (obligatoire) :');
+  if(!raison||!raison.trim()){alert('Une raison est obligatoire.');return;}
+  document.getElementById('status-chip').textContent='Annulé';
+  document.getElementById('status-chip').className='status-chip sc-annulé';
+  document.getElementById('s1').className='step cancelled';
+  document.getElementById('btn-prevalider').disabled=true;
+  document.getElementById('btn-valider').disabled=true;
+  document.getElementById('btn-brouillon').disabled=true;
+  document.getElementById('btn-annuler').disabled=true;
+  bsdStatut='annule';
+  addJAuto('BSD ANNULÉ par '+(localStorage.getItem('wastify_user')||'Ops')+'. Raison : '+raison);
+}
+
+function sauvegarder() {
+  addJAuto('Sauvegarde brouillon');
+  alert('BSD sauvegardé en brouillon.');
+}
+
+// ============================================================
+// CHARGEMENT DEPUIS BC
+// ============================================================
+function chargerDepuisBC(bc) {
+  document.getElementById('bc-banner-wrap').style.display='block';
+  document.getElementById('bc-ref-disp').textContent=bc.ref||'';
+  document.getElementById('bc-client-disp').textContent=bc.client||'';
+  document.getElementById('bc-service-disp').textContent=bc.service||'';
+  document.getElementById('ref-so').value=bc.ref||'';
+  document.getElementById('type-service').value=bc.service||'';
+  document.getElementById('bc-prefill-note').style.display='block';
+
+  // Extras
+  var extras=[];
+  if(bc.heureDebut&&bc.heureFin) extras.push('🕐 Créneau : '+bc.heureDebut+' — '+bc.heureFin);
+  if(bc.contact) extras.push('👤 Contact : '+bc.contact+(bc.contactTel?' — '+bc.contactTel:''));
+  if(bc.acces) extras.push('📍 Accès : '+bc.acces);
+  if(bc.contraintes) extras.push('⚠️ Contraintes : '+bc.contraintes);
+  document.getElementById('bc-extras').innerHTML=extras.join('<br>');
+
+  // Client
+  if(bc.client) {
+    document.getElementById('inp-client').value=bc.client;
+    var c=CLIENTS_DB.find(function(x){return x.nom===bc.client||x.nom.includes(bc.client.split(' ')[0]);});
+    if(c) selectClient(c.id);
+  }
+
+  // Articles
+  if(bc.articles&&bc.articles.length>0) {
+    document.getElementById('ops-tbody').innerHTML='';
+    var totalPoids=0;
+    bc.articles.forEach(function(a){ totalPoids+=parseFloat(a.poids)||0; ajouterLigneOps(a.nom,a.qte,a.unite); });
+    document.getElementById('poids-prevu').value=totalPoids.toFixed(2);
+  }
+
+  // Agents depuis BC
+  if(bc.agents&&bc.agents.length>0) {
+    // Garder l'agent connecté, ajouter les autres
+    bc.agents.forEach(function(ag,i) {
+      if(i>0) {
+        var div=document.createElement('div');
+        div.className='agent-item';
+        div.innerHTML='<div class="agent-avatar" style="background:#29608A;">?</div>'+
+          '<div class="agent-name">'+ag.replace(' (Responsable)','')+'</div>'+
+          '<span class="agent-role-tag">Agent</span>';
+        document.getElementById('agents-list').appendChild(div);
+      }
+    });
+  }
+
+  addJAuto('BSD pré-rempli depuis BC '+bc.ref);
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(id,btn) {
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ============================================================
+// JOURNAL
+// ============================================================
+function setJType(t,btn) {
+  jType=t;
+  document.querySelectorAll('.jtype-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function formatDate(d) {
+  var pad=function(n){return String(n).padStart(2,'0');};
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' à '+pad(d.getHours())+'h'+pad(d.getMinutes());
+}
+
+function addJAuto(txt) {
+  var el=document.getElementById('journal-entries');
+  var div=document.createElement('div');
+  div.className='j-entry';
+  div.innerHTML='<div class="j-avatar sys">⚙</div><div class="j-bubble"><div class="j-meta">Système — '+formatDate(new Date())+'</div><div class="j-text sys">'+txt+'</div></div>';
+  el.appendChild(div);
+}
+
+function addJournal(type, txt) {
+  var user=localStorage.getItem('wastify_user')||'Agent';
+  var init=user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var el=document.getElementById('journal-entries');
+  var div=document.createElement('div');
+  div.className='j-entry';
+  var typeLabel=type==='interne'?'Note interne':(type==='incident'?'<span style="color:#e74c3c;">Incident</span>':'<span style="color:#e67e22;">Message CLIENT</span>');
+  var textClass=type==='externe'?' ext':(type==='incident'?' incident':'');
+  div.innerHTML='<div class="j-avatar">'+init+'</div><div class="j-bubble"><div class="j-meta"><strong>'+user+'</strong> — '+formatDate(new Date())+' — '+typeLabel+'</div><div class="j-text'+textClass+'">'+txt+'</div></div>';
+  el.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function envoyerJournal() {
+  var txt=document.getElementById('j-input').value.trim();
+  if(!txt) return;
+  addJournal(jType, txt);
+  document.getElementById('j-input').value='';
+  if(jType!=='interne') document.getElementById('comment-badge').style.display='inline';
+}
+
+// Datalists pour autocomplete
+document.addEventListener('DOMContentLoaded', function() {
+  var ml=document.createElement('datalist'); ml.id='marques-list';
+  MARQUES.forEach(function(m){var o=document.createElement('option');o.value=m;ml.appendChild(o);});
+  document.body.appendChild(ml);
+  var mol=document.createElement('datalist'); mol.id='modeles-list';
+  MODELES.forEach(function(m){var o=document.createElement('option');o.value=m;mol.appendChild(o);});
+  document.body.appendChild(mol);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Bons de commande & Contrats</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+.page-bar { background: white; border-bottom: 1px solid #dde1e5; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0; position: sticky; top: 61px; z-index: 99; }
+.page-tabs { display: flex; }
+.page-tab { padding: 14px 22px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; background: none; color: #888; font-family: Arial, sans-serif; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.page-tab.active { color: #29608A; border-bottom-color: #8CC740; }
+.page-tab:hover { color: #29608A; }
+.page-actions { display: flex; gap: 8px; padding: 10px 0; }
+.body { padding: 20px 24px; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+.page-content { display: none; }
+.page-content.active { display: block; }
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 11px 18px; display: flex; align-items: center; gap: 10px; }
+.card-head-blue { background: #29608A; }
+.card-head-green { background: #3d7a14; }
+.card-head-mid { background: #1a5276; }
+.card-head-orange { background: #e67e22; }
+.card-head-title { font-size: 14px; font-weight: bold; color: white; }
+.dot-g { width: 9px; height: 9px; border-radius: 50%; background: #8CC740; flex-shrink: 0; }
+.dot-b { width: 9px; height: 9px; border-radius: 50%; background: #559FD7; flex-shrink: 0; }
+.card-head-right { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.card-body { padding: 18px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input, .field select, .field textarea { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 13px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus { outline: none; border-color: #559FD7; }
+.sub-title { font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #8CC740; display: flex; align-items: center; justify-content: space-between; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: #f4f6f8; }
+th { padding: 9px 10px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; text-transform: uppercase; }
+td { padding: 8px 10px; border-bottom: 1px solid #dde1e5; vertical-align: middle; }
+td select, td input[type=text], td input[type=number] { border: 1px solid #c8cfd8; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; color: #404041; width: 100%; font-family: Arial, sans-serif; }
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn-save { background: #29608A; color: white; border-color: #29608A; }
+.btn-green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-orange { background: #e67e22; color: white; border-color: #e67e22; }
+.btn-cancel { color: #b03a2e; border-color: #b03a2e; }
+.add-line-btn { display: inline-flex; align-items: center; gap: 6px; color: #559FD7; font-size: 13px; cursor: pointer; padding: 8px 0; background: none; border: none; font-family: Arial, sans-serif; }
+.add-line-btn:hover { text-decoration: underline; }
+.plus-c { width: 18px; height: 18px; border-radius: 50%; background: #559FD7; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; flex-shrink: 0; }
+.badge { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: bold; }
+.badge-actif { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.badge-utilise { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.badge-termine { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.badge-urgent { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+.badge-suspendu { background: #fff3cd; color: #7a5c00; border: 1px solid #f0c040; }
+.badge-expire { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.odoo-note { background: #fff8e6; border: 1px solid #f0c040; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #7a5c00; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.form-panel { display: none; }
+.form-panel.visible { display: block; }
+/* AGENTS */
+.agent-item { display: flex; align-items: center; gap: 10px; border-radius: 6px; padding: 8px 12px; border: 1px solid #dde1e5; margin-bottom: 6px; }
+.agent-item.first { background: #eaf5d5; border-color: #8CC740; }
+.agent-badge { width: 28px; height: 28px; border-radius: 50%; background: #29608A; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+.agent-item.first .agent-badge { background: #3d7a14; }
+/* JOURS */
+.jours-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.jour-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #c8cfd8; background: white; font-size: 13px; cursor: pointer; font-family: Arial, sans-serif; color: #404041; transition: all 0.15s; }
+.jour-btn.selected { background: #29608A; color: white; border-color: #29608A; }
+/* CONTRAT CARD */
+.contrat-card { border: 1px solid #dde1e5; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; transition: all 0.15s; cursor: pointer; }
+.contrat-card:hover { border-color: #559FD7; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.contrat-card.actif { border-left: 4px solid #8CC740; }
+.contrat-card.suspendu { border-left: 4px solid #f0c040; }
+.contrat-card.expire { border-left: 4px solid #dde1e5; }
+.contrat-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.contrat-ref { font-size: 15px; font-weight: bold; color: #29608A; }
+.contrat-client { font-size: 14px; color: #404041; }
+.contrat-body { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; font-size: 12px; }
+.contrat-info { display: flex; flex-direction: column; gap: 2px; }
+.contrat-info-label { color: #888; font-size: 10px; text-transform: uppercase; }
+.contrat-info-val { color: #404041; font-weight: bold; font-size: 13px; }
+.contrat-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #f4f6f8; }
+.btn-sm { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #404041; font-family: Arial, sans-serif; }
+.btn-sm.green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-sm.blue { background: #29608A; color: white; border-color: #29608A; }
+.btn-sm.orange { background: #e67e22; color: white; border-color: #e67e22; }
+/* BC LIST TABLE */
+.list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list-table th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; white-space: nowrap; }
+.list-table td { padding: 9px 12px; border-bottom: 1px solid #f4f6f8; }
+.list-table tr:hover td { background: #f8fafb; }
+@media (max-width:700px) { .g2,.g3 { grid-template-columns:1fr; } .contrat-body { grid-template-columns:1fr 1fr; } }
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="dashboard_ops.html" class="nav-link">&#8592; Dashboard</a>
+    <a href="bsd.html" class="nav-link">BSD</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+
+<div class="page-bar">
+  <div class="page-tabs">
+    <button class="page-tab active" onclick="showPage('bc',this)">&#128203; Bons de commande</button>
+    <button class="page-tab" onclick="showPage('contrats',this)">&#128196; Contrats</button>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-save" id="btn-nouveau" onclick="toggleForm()">+ Nouveau</button>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- ====================================================
+       PAGE BONS DE COMMANDE
+  ==================================================== -->
+  <div class="page-content active" id="page-bc">
+
+    <div class="odoo-note">
+      <span style="font-size:16px;">&#9888;</span>
+      <span><strong>Mode manuel</strong> — Les bons de commande seront synchronisés automatiquement depuis Odoo en Phase 2.</span>
+    </div>
+
+    <!-- FORMULAIRE NOUVEAU BC -->
+    <div class="card form-panel" id="form-bc">
+      <div class="card-head card-head-blue"><div class="dot-g"></div><span class="card-head-title">Nouveau bon de commande</span></div>
+      <div class="card-body">
+        <div class="g3">
+          <div class="field"><label>Référence Odoo (SO) *</label><input type="text" id="bc-ref" placeholder="SO-2026-XXXX"></div>
+          <div class="field">
+            <label>Client *</label>
+            <select id="bc-client">
+              <option value="">— Sélectionner —</option>
+              <option>TRANSPORT IBRAHIMA SAKHO</option>
+              <option>Orange Sénégal</option>
+              <option>Sonatel</option>
+              <option>EGMT</option>
+              <option>GMD</option>
+              <option>SENEAU</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Type de service *</label>
+            <select id="bc-service">
+              <option value="">— Type —</option>
+              <option>Collecte &amp; Recyclage DEEE</option>
+              <option>Destruction archives sur site</option>
+              <option>Destruction archives entrepôt</option>
+              <option>Destruction disques durs sur site</option>
+              <option>Destruction disques durs entrepôt</option>
+              <option>Collecte déchets recyclables</option>
+              <option>Collecte déchets ménagers</option>
+            </select>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="field">
+            <label>Site client</label>
+            <select id="bc-site"><option value="">— Site —</option><option>Diamniadio</option><option>Route de Rufisque</option><option>Plateau</option><option>Almadies</option><option>Liberté 6</option></select>
+          </div>
+          <div class="field"><label>Date souhaitée *</label><input type="date" id="bc-date"></div>
+          <div class="field">
+            <label>Priorité</label>
+            <div style="display:flex;gap:8px;margin-top:2px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;border:1px solid #c8cfd8;border-radius:6px;flex:1;user-select:none;">
+                <input type="radio" name="bc-prio" value="normale" checked style="accent-color:#8CC740;cursor:pointer;"> Normale
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;border:1px solid #c8cfd8;border-radius:6px;flex:1;user-select:none;">
+                <input type="radio" name="bc-prio" value="urgente" style="accent-color:#e74c3c;cursor:pointer;"> &#9888; Urgente
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- CRÉNEAU OPTIONNEL -->
+        <div class="sub-title">
+          <span>&#128336; Créneau horaire</span>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:normal;text-transform:none;letter-spacing:0;cursor:pointer;color:#888;">
+            <input type="checkbox" id="cb-creneau" onchange="toggleCreneau()" style="width:14px;height:14px;accent-color:#8CC740;cursor:pointer;"> Spécifier un créneau
+          </label>
+        </div>
+        <div id="creneau-fields" style="display:none;">
+          <div class="g3">
+            <div class="field"><label>Heure de début</label><input type="time" id="bc-hdebut" value="08:00"></div>
+            <div class="field"><label>Heure de fin</label><input type="time" id="bc-hfin" value="12:00"></div>
+            <div class="field">
+              <label>Durée estimée</label>
+              <select id="bc-duree"><option>30 min</option><option>1h</option><option selected>2h</option><option>3h</option><option>Demi-journée</option><option>Journée entière</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACT -->
+        <div class="sub-title">&#128100; Contact sur place</div>
+        <div class="g3">
+          <div class="field"><label>Nom</label><input type="text" id="bc-contact" placeholder="Nom et prénom"></div>
+          <div class="field"><label>Téléphone</label><input type="tel" id="bc-tel" placeholder="77 000 00 00"></div>
+          <div class="field"><label>Poste</label><input type="text" id="bc-poste" placeholder="Responsable logistique"></div>
+        </div>
+
+        <!-- INSTRUCTIONS -->
+        <div class="sub-title">&#128204; Instructions &amp; contraintes</div>
+        <div class="g2">
+          <div class="field"><textarea id="bc-acces" placeholder="Instructions d'accès au site..." style="min-height:60px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea></div>
+          <div class="field"><textarea id="bc-contraintes" placeholder="Contraintes spéciales (EPI, pesée impossible...)" style="min-height:60px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea></div>
+        </div>
+
+        <!-- AGENTS -->
+        <div class="sub-title">&#128119; Agents affectés <span style="font-size:11px;font-weight:normal;color:#888;">(le 1er = responsable ⭐ — véhicule saisi sur BSD)</span></div>
+        <div id="bc-agents-list"></div>
+        <button class="add-line-btn" onclick="ajouterAgentBC()"><span class="plus-c">+</span> Ajouter un agent</button>
+
+        <!-- ARTICLES -->
+        <div class="sub-title">&#128230; Articles prévus</div>
+        <table><thead><tr><th>Article</th><th>Qté prévue</th><th>Unité</th><th>Poids estimé (kg)</th><th></th></tr></thead>
+        <tbody id="bc-articles"></tbody></table>
+        <button class="add-line-btn" onclick="ajouterArticleBC()"><span class="plus-c">+</span> Ajouter un article</button>
+
+        <div class="field" style="margin-top:14px;">
+          <label>Notes</label>
+          <textarea id="bc-notes" style="min-height:50px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;" placeholder="Notes pour l'équipe..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+          <button class="btn btn-cancel" onclick="toggleForm()">Annuler</button>
+          <button class="btn btn-green" onclick="sauvegarderBC()">&#10003; Enregistrer le bon de commande</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTE BC -->
+    <div class="card">
+      <div class="card-head card-head-green">
+        <div class="dot-b"></div><span class="card-head-title">Bons de commande</span>
+        <div class="card-head-right">
+          <input type="text" placeholder="&#128269; Rechercher..." oninput="rechercherBC(this.value)" style="border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:5px 10px;font-size:12px;background:rgba(255,255,255,0.15);color:white;width:180px;">
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="list-table"><thead><tr>
+          <th>Réf. Odoo</th><th>Client</th><th>Service</th><th>Date</th><th>Créneau</th><th>Contact</th><th>Agents</th><th>Priorité</th><th>Statut</th><th></th>
+        </tr></thead>
+        <tbody id="bc-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       PAGE CONTRATS
+  ==================================================== -->
+  <div class="page-content" id="page-contrats">
+
+    <div class="odoo-note">
+      <span style="font-size:16px;">&#128196;</span>
+      <span>Les contrats définissent les règles récurrentes. Créez un bon de commande depuis un contrat pour planifier une collecte.</span>
+    </div>
+
+    <!-- FORMULAIRE NOUVEAU CONTRAT -->
+    <div class="card form-panel" id="form-contrat">
+      <div class="card-head card-head-orange"><div class="dot-g"></div><span class="card-head-title">Nouveau contrat</span></div>
+      <div class="card-body">
+        <div class="g3">
+          <div class="field"><label>Référence contrat *</label><input type="text" id="ct-ref" placeholder="CONT-2026-001"></div>
+          <div class="field">
+            <label>Client *</label>
+            <select id="ct-client">
+              <option value="">— Sélectionner —</option>
+              <option>TRANSPORT IBRAHIMA SAKHO</option>
+              <option>Orange Sénégal</option>
+              <option>Sonatel</option>
+              <option>EGMT</option>
+              <option>GMD</option>
+              <option>SENEAU</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Type de service *</label>
+            <select id="ct-service">
+              <option value="">— Type —</option>
+              <option>Collecte &amp; Recyclage DEEE</option>
+              <option>Destruction archives</option>
+              <option>Destruction disques durs</option>
+              <option>Collecte déchets recyclables</option>
+              <option>Collecte déchets ménagers</option>
+            </select>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="field">
+            <label>Site(s) concerné(s)</label>
+            <select id="ct-site"><option value="">— Site —</option><option>Diamniadio</option><option>Route de Rufisque</option><option>Plateau</option><option>Almadies</option><option>Tous les sites</option></select>
+          </div>
+          <div class="field"><label>Date de début *</label><input type="date" id="ct-debut"></div>
+          <div class="field"><label>Date de fin</label><input type="date" id="ct-fin"></div>
+        </div>
+
+        <!-- FRÉQUENCE -->
+        <div class="sub-title">&#128260; Fréquence de collecte</div>
+        <div class="g3">
+          <div class="field">
+            <label>Fréquence</label>
+            <select id="ct-freq" onchange="updateFreqDetails()">
+              <option value="">— Sélectionner —</option>
+              <option value="hebdo">Hebdomadaire</option>
+              <option value="bimensuel">Bi-mensuel (2x/mois)</option>
+              <option value="mensuel">Mensuel</option>
+              <option value="trimestriel">Trimestriel</option>
+              <option value="demande">À la demande</option>
+            </select>
+          </div>
+          <div class="field" id="freq-jours-wrap" style="display:none;">
+            <label>Jours préférés</label>
+            <div class="jours-grid" id="jours-grid">
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Lun</button>
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Mar</button>
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Mer</button>
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Jeu</button>
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Ven</button>
+              <button type="button" class="jour-btn" onclick="toggleJour(this)">Sam</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Créneau habituel (optionnel)</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="time" id="ct-hdebut" style="flex:1;">
+              <span style="color:#888;font-size:13px;">—</span>
+              <input type="time" id="ct-hfin" style="flex:1;">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACT HABITUEL -->
+        <div class="sub-title">&#128100; Contact habituel</div>
+        <div class="g3">
+          <div class="field"><label>Nom</label><input type="text" id="ct-contact" placeholder="Nom et prénom"></div>
+          <div class="field"><label>Téléphone</label><input type="tel" id="ct-tel" placeholder="77 000 00 00"></div>
+          <div class="field"><label>Email</label><input type="email" id="ct-email" placeholder="contact@client.sn"></div>
+        </div>
+
+        <!-- INSTRUCTIONS PERMANENTES -->
+        <div class="sub-title">&#128204; Instructions permanentes</div>
+        <div class="g2">
+          <div class="field"><textarea id="ct-acces" placeholder="Instructions d'accès valables pour toutes les collectes..." style="min-height:60px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea></div>
+          <div class="field"><textarea id="ct-contraintes" placeholder="Contraintes permanentes (EPI, équipements requis...)" style="min-height:60px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea></div>
+        </div>
+
+        <!-- ARTICLES HABITUELS -->
+        <div class="sub-title">&#128230; Articles habituellement collectés</div>
+        <table><thead><tr><th>Article</th><th>Qté habituelle</th><th>Unité</th><th></th></tr></thead>
+        <tbody id="ct-articles"></tbody></table>
+        <button class="add-line-btn" onclick="ajouterArticleCT()"><span class="plus-c">+</span> Ajouter un article</button>
+
+        <div class="field" style="margin-top:14px;">
+          <label>Notes</label>
+          <textarea id="ct-notes" style="min-height:50px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;" placeholder="Informations contractuelles..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+          <button class="btn btn-cancel" onclick="toggleForm()">Annuler</button>
+          <button class="btn btn-orange" onclick="sauvegarderContrat()">&#10003; Enregistrer le contrat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTE CONTRATS -->
+    <div id="contrats-liste"></div>
+
+  </div><!-- end page-contrats -->
+
+</div><!-- end body -->
+
+<script>
+var ARTICLES = ['Ordinateurs portables','Unités centrales','Ecrans','Imprimantes','Copieurs','Téléphones mobiles','Tablettes','Serveurs','Disques durs','Cartouches encre','Cartouches toner','Piles / Batteries','Archives papier','Déchets ménagers','Papier / Carton','Plastique','Métaux ferreux','Autre'];
+var UNITES = ['unité','kg','tonne','boîte'];
+var AGENTS = [{id:'woulare',nom:'Ibrahima WOULARE'},{id:'tapha',nom:'Tapha'},{id:'adama',nom:'ADAMA NGUER'},{id:'ahmed',nom:'Ahmed DIAGNE'}];
+var FREQ_LABELS = {hebdo:'Hebdomadaire',bimensuel:'Bi-mensuel',mensuel:'Mensuel',trimestriel:'Trimestriel',demande:'À la demande'};
+
+var pageCourante = 'bc';
+
+var BC_LIST = [
+  { ref:'SO-2026-0138', client:'Orange Sénégal', service:'Collecte DEEE', date:'25/03/2026',
+    creneau:'09:00 — 11:00', contact:'Aminata FALL', tel:'33 869 30 00',
+    agents:['Ibrahima WOULARE ⭐','Tapha'], priorite:'normale', statut:'utilise', bsd:'DIA/BSD/2026/04998' },
+  { ref:'SO-2026-0145', client:'Sonatel', service:'Destruction disques durs entrepôt', date:'05/04/2026',
+    creneau:'08:00 — 12:00', contact:'Moussa NDIAYE', tel:'33 839 90 00',
+    agents:['Ibrahima WOULARE ⭐'], priorite:'normale', statut:'actif', bsd:'' },
+  { ref:'SO-2026-0147', client:'EGMT', service:'Collecte DEEE', date:'08/04/2026',
+    creneau:'Non spécifié', contact:'Omar SARR', tel:'33 821 00 00',
+    agents:['Tapha ⭐','Ahmed DIAGNE'], priorite:'urgente', statut:'actif', bsd:'' },
+];
+
+var CONTRATS_LIST = [
+  { ref:'CONT-2026-001', client:'Orange Sénégal', service:'Collecte & Recyclage DEEE',
+    site:'Almadies', debut:'01/01/2026', fin:'31/12/2026',
+    freq:'hebdo', jours:'Mercredi', creneau:'09:00 — 11:00',
+    contact:'Aminata FALL', tel:'33 869 30 00',
+    acces:'Badge requis — Entrée principale', contraintes:'',
+    statut:'actif' },
+  { ref:'CONT-2026-002', client:'Sonatel', service:'Collecte & Recyclage DEEE',
+    site:'Plateau', debut:'01/02/2026', fin:'31/01/2027',
+    freq:'bimensuel', jours:'Lundi, Jeudi', creneau:'08:00 — 12:00',
+    contact:'Moussa NDIAYE', tel:'33 839 90 00',
+    acces:'', contraintes:'Pesée sur site impossible',
+    statut:'actif' },
+  { ref:'CONT-2025-008', client:'EGMT', service:'Collecte & Recyclage DEEE',
+    site:'Diamniadio', debut:'01/06/2025', fin:'31/05/2026',
+    freq:'mensuel', jours:'Vendredi', creneau:'Non spécifié',
+    contact:'Omar SARR', tel:'33 821 00 00',
+    acces:'', contraintes:'',
+    statut:'expire' },
+];
+
+// ============================================================
+// NAVIGATION PAGES
+// ============================================================
+function showPage(page, btn) {
+  pageCourante = page;
+  document.querySelectorAll('.page-content').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.page-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('btn-nouveau').textContent = page==='bc' ? '+ Nouveau BC' : '+ Nouveau contrat';
+  // Hide forms
+  document.getElementById('form-bc').classList.remove('visible');
+  document.getElementById('form-contrat').classList.remove('visible');
+}
+
+function toggleForm() {
+  if (pageCourante === 'bc') {
+    var f = document.getElementById('form-bc');
+    f.classList.toggle('visible');
+    if (f.classList.contains('visible')) {
+      f.scrollIntoView({behavior:'smooth'});
+      var now = new Date();
+      var pad = function(n){return String(n).padStart(2,'0');};
+      document.getElementById('bc-date').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+      if (!document.getElementById('bc-agents-list').children.length) ajouterAgentBC();
+    }
+  } else {
+    var f = document.getElementById('form-contrat');
+    f.classList.toggle('visible');
+    if (f.classList.contains('visible')) {
+      f.scrollIntoView({behavior:'smooth'});
+      var now = new Date();
+      var pad = function(n){return String(n).padStart(2,'0');};
+      document.getElementById('ct-debut').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    }
+  }
+}
+
+// ============================================================
+// BONS DE COMMANDE
+// ============================================================
+function toggleCreneau() {
+  document.getElementById('creneau-fields').style.display = document.getElementById('cb-creneau').checked ? 'block' : 'none';
+}
+
+function ajouterAgentBC() {
+  var list = document.getElementById('bc-agents-list');
+  var isFirst = list.children.length === 0;
+  var aO = AGENTS.map(function(a){return '<option>'+a.nom+'</option>';}).join('');
+  var div = document.createElement('div');
+  div.className = 'agent-item' + (isFirst?' first':'');
+  div.innerHTML = '<div class="agent-badge">'+(isFirst?'&#9733;':'&#128100;')+'</div>'+
+    '<select style="flex:1;border:1px solid #c8cfd8;border-radius:6px;padding:6px 10px;font-size:13px;font-family:Arial,sans-serif;">'+aO+'</select>'+
+    '<span style="font-size:11px;color:#888;white-space:nowrap;">'+(isFirst?'Responsable':'Agent')+'</span>'+
+    '<button onclick="this.closest(\'.agent-item\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:16px;">&#215;</button>';
+  list.appendChild(div);
+}
+
+function ajouterArticleBC() {
+  var tr = document.createElement('tr');
+  var aO = ARTICLES.map(function(a){return '<option>'+a+'</option>';}).join('');
+  var uO = UNITES.map(function(u){return '<option>'+u+'</option>';}).join('');
+  tr.innerHTML='<td><select>'+aO+'</select></td><td><input type="number" min="1" placeholder="0"></td><td><select>'+uO+'</select></td><td><input type="number" step="0.01" placeholder="0,00"></td><td><button onclick="this.closest(\'tr\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:15px;">&#215;</button></td>';
+  document.getElementById('bc-articles').appendChild(tr);
+}
+
+function sauvegarderBC() {
+  var ref=document.getElementById('bc-ref').value.trim();
+  var client=document.getElementById('bc-client').value;
+  var service=document.getElementById('bc-service').value;
+  var date=document.getElementById('bc-date').value;
+  if(!ref||!client||!service||!date){alert('Référence, client, service et date sont obligatoires.');return;}
+  var agents=[];
+  document.querySelectorAll('#bc-agents-list select').forEach(function(s,i){agents.push(s.value+(i===0?' ⭐':''));});
+  var parts=date.split('-');
+  var dateAff=parts.length===3?parts[2]+'/'+parts[1]+'/'+parts[0]:date;
+  var cbCren=document.getElementById('cb-creneau').checked;
+  var creneau=cbCren?(document.getElementById('bc-hdebut').value+' — '+document.getElementById('bc-hfin').value):'Non spécifié';
+  var prio=document.querySelector('input[name="bc-prio"]:checked').value;
+  BC_LIST.unshift({ref:ref,client:client,service:service,date:dateAff,creneau:creneau,
+    contact:document.getElementById('bc-contact').value,tel:document.getElementById('bc-tel').value,
+    agents:agents,priorite:prio,statut:'actif',bsd:''});
+  renderBC(BC_LIST);
+  document.getElementById('form-bc').classList.remove('visible');
+  document.getElementById('bc-agents-list').innerHTML='';
+  document.getElementById('bc-articles').innerHTML='';
+  document.getElementById('bc-ref').value='';
+  alert('Bon de commande '+ref+' enregistré !');
+}
+
+function renderBC(data) {
+  var tbody=document.getElementById('bc-tbody');
+  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:#888;padding:20px;">Aucun bon de commande</td></tr>';return;}
+  tbody.innerHTML=data.map(function(bc){
+    var bc_class=bc.statut==='actif'?'badge-actif':(bc.statut==='utilise'?'badge-utilise':'badge-termine');
+    var bc_label=bc.statut==='actif'?'Actif':(bc.statut==='utilise'?'BSD créé':'Terminé');
+    var prio=bc.priorite==='urgente'?'<span class="badge badge-urgent">&#9888; Urgent</span>':'<span style="font-size:12px;color:#888;">—</span>';
+    var btn=bc.statut==='actif'?'<button class="btn-sm green" onclick="creerBSD(\''+bc.ref+'\')">Créer BSD</button>':
+      (bc.bsd?'<span style="color:#559FD7;font-size:11px;">'+bc.bsd.split('/').pop()+'</span>':'—');
+    return '<tr><td style="font-weight:bold;color:#29608A;">'+bc.ref+'</td><td>'+bc.client+'</td>'+
+      '<td style="font-size:12px;">'+bc.service+'</td><td>'+bc.date+'</td>'+
+      '<td style="font-size:12px;color:#888;">'+bc.creneau+'</td>'+
+      '<td style="font-size:12px;">'+bc.contact+'</td>'+
+      '<td style="font-size:12px;">'+bc.agents.join('<br>')+'</td>'+
+      '<td>'+prio+'</td>'+
+      '<td><span class="badge '+bc_class+'">'+bc_label+'</span></td>'+
+      '<td>'+btn+'</td></tr>';
+  }).join('');
+}
+
+function creerBSD(ref) {
+  var bc=BC_LIST.find(function(b){return b.ref===ref;});
+  if(!bc)return;
+  localStorage.setItem('wastify_bc',JSON.stringify(bc));
+  alert('Redirection vers le BSD pré-rempli pour '+bc.client+'...');
+  window.location.href='bsd.html';
+}
+
+function rechercherBC(val) {
+  var v=val.toLowerCase();
+  renderBC(BC_LIST.filter(function(bc){return bc.ref.toLowerCase().includes(v)||bc.client.toLowerCase().includes(v);}));
+}
+
+// ============================================================
+// CONTRATS
+// ============================================================
+function updateFreqDetails() {
+  var v=document.getElementById('ct-freq').value;
+  var wrap=document.getElementById('freq-jours-wrap');
+  wrap.style.display=(v==='hebdo'||v==='bimensuel'||v==='mensuel')?'block':'none';
+}
+
+function toggleJour(btn) { btn.classList.toggle('selected'); }
+
+function ajouterArticleCT() {
+  var tr=document.createElement('tr');
+  var aO=ARTICLES.map(function(a){return '<option>'+a+'</option>';}).join('');
+  var uO=UNITES.map(function(u){return '<option>'+u+'</option>';}).join('');
+  tr.innerHTML='<td><select>'+aO+'</select></td><td><input type="number" min="1" placeholder="0"></td><td><select>'+uO+'</select></td><td><button onclick="this.closest(\'tr\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:15px;">&#215;</button></td>';
+  document.getElementById('ct-articles').appendChild(tr);
+}
+
+function sauvegarderContrat() {
+  var ref=document.getElementById('ct-ref').value.trim();
+  var client=document.getElementById('ct-client').value;
+  var service=document.getElementById('ct-service').value;
+  var debut=document.getElementById('ct-debut').value;
+  if(!ref||!client||!service||!debut){alert('Référence, client, service et date de début sont obligatoires.');return;}
+  var jours=Array.from(document.querySelectorAll('.jour-btn.selected')).map(function(b){return b.textContent;}).join(', ')||'Non spécifié';
+  var parts=debut.split('-');
+  var debutAff=parts.length===3?parts[2]+'/'+parts[1]+'/'+parts[0]:debut;
+  var finVal=document.getElementById('ct-fin').value;
+  var finParts=finVal?finVal.split('-'):null;
+  var finAff=finParts&&finParts.length===3?finParts[2]+'/'+finParts[1]+'/'+finParts[0]:'Indéfinie';
+  CONTRATS_LIST.unshift({ref:ref,client:client,service:service,
+    site:document.getElementById('ct-site').value,
+    debut:debutAff,fin:finAff,
+    freq:document.getElementById('ct-freq').value,
+    jours:jours,
+    creneau:document.getElementById('ct-hdebut').value?document.getElementById('ct-hdebut').value+' — '+document.getElementById('ct-hfin').value:'Non spécifié',
+    contact:document.getElementById('ct-contact').value,
+    tel:document.getElementById('ct-tel').value,
+    acces:document.getElementById('ct-acces').value,
+    contraintes:document.getElementById('ct-contraintes').value,
+    statut:'actif'});
+  renderContrats();
+  document.getElementById('form-contrat').classList.remove('visible');
+  document.getElementById('ct-ref').value='';
+  document.getElementById('ct-articles').innerHTML='';
+  alert('Contrat '+ref+' enregistré !');
+}
+
+function renderContrats() {
+  var div=document.getElementById('contrats-liste');
+  div.innerHTML=CONTRATS_LIST.map(function(ct){
+    var sc=ct.statut==='actif'?'actif':(ct.statut==='suspendu'?'suspendu':'expire');
+    var bl=ct.statut==='actif'?'badge-actif':(ct.statut==='suspendu'?'badge-suspendu':'badge-expire');
+    var blab=ct.statut==='actif'?'Actif':(ct.statut==='suspendu'?'Suspendu':'Expiré');
+    return '<div class="contrat-card '+sc+'">'+
+      '<div class="contrat-header">'+
+        '<span class="contrat-ref">'+ct.ref+'</span>'+
+        '<span class="contrat-client">'+ct.client+'</span>'+
+        '<span class="badge '+bl+'">'+blab+'</span>'+
+        '<span style="font-size:12px;color:#888;margin-left:auto;">'+ct.service+'</span>'+
+      '</div>'+
+      '<div class="contrat-body">'+
+        '<div class="contrat-info"><span class="contrat-info-label">Fréquence</span><span class="contrat-info-val">'+(FREQ_LABELS[ct.freq]||ct.freq)+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Jours préférés</span><span class="contrat-info-val">'+ct.jours+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Créneau</span><span class="contrat-info-val">'+ct.creneau+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Période</span><span class="contrat-info-val">'+ct.debut+' → '+ct.fin+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Contact</span><span class="contrat-info-val">'+ct.contact+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Téléphone</span><span class="contrat-info-val">'+ct.tel+'</span></div>'+
+        '<div class="contrat-info"><span class="contrat-info-label">Site</span><span class="contrat-info-val">'+ct.site+'</span></div>'+
+        (ct.acces?'<div class="contrat-info"><span class="contrat-info-label">Accès</span><span class="contrat-info-val" style="font-size:12px;font-weight:normal;">'+ct.acces+'</span></div>':'')+
+      '</div>'+
+      '<div class="contrat-actions">'+
+        '<button class="btn-sm green" onclick="creerBCDepuisContrat(\''+ct.ref+'\')">&#128203; Créer un bon de commande</button>'+
+        (ct.statut==='actif'?'<button class="btn-sm" onclick="suspendreContrat(\''+ct.ref+'\')">Suspendre</button>':'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function creerBCDepuisContrat(ref) {
+  var ct=CONTRATS_LIST.find(function(c){return c.ref===ref;});
+  if(!ct)return;
+  // Switch to BC tab and pre-fill form
+  document.querySelectorAll('.page-tab')[0].click();
+  setTimeout(function(){
+    document.getElementById('btn-nouveau').click();
+    document.getElementById('bc-client').value='';
+    // Find matching option
+    var sel=document.getElementById('bc-client');
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].text===ct.client){sel.selectedIndex=i;break;}}
+    // Pre-fill service
+    var svc=document.getElementById('bc-service');
+    for(var i=0;i<svc.options.length;i++){if(svc.options[i].text===ct.service){svc.selectedIndex=i;break;}}
+    document.getElementById('bc-contact').value=ct.contact||'';
+    document.getElementById('bc-tel').value=ct.tel||'';
+    document.getElementById('bc-acces').value=ct.acces||'';
+    document.getElementById('bc-contraintes').value=ct.contraintes||'';
+    alert('Formulaire pré-rempli depuis le contrat '+ref+'\nVérifiez et complétez les informations avant d\'enregistrer.');
+  },300);
+}
+
+function suspendreContrat(ref) {
+  var ct=CONTRATS_LIST.find(function(c){return c.ref===ref;});
+  if(ct&&confirm('Suspendre le contrat '+ref+' ?')){ct.statut='suspendu';renderContrats();}
+}
+
+window.onload=function(){
+  renderBC(BC_LIST);
+  renderContrats();
+  var user=localStorage.getItem('wastify_user')||'Ops';
+  document.getElementById('user-pill').textContent=user.split(' ')[0];
+};
+</script>
+</body>
+</html>

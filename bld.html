@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — BLD</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+.docbar { background: white; border-bottom: 1px solid #dde1e5; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.steps { display: flex; }
+.step { padding: 6px 16px; font-size: 12px; border: 1px solid #dde1e5; background: #f4f6f8; color: #888; }
+.step:first-child { border-radius: 6px 0 0 6px; }
+.step:last-child { border-radius: 0 6px 6px 0; }
+.step.active { background: #29608A; color: white; border-color: #29608A; font-weight: bold; }
+.step.done { background: #8CC740; color: white; border-color: #8CC740; }
+.step.cancelled { background: #e74c3c; color: white; border-color: #e74c3c; }
+.actbar { background: white; border-bottom: 1px solid #dde1e5; padding: 8px 24px; display: flex; gap: 6px; align-items: center; position: sticky; top: 115px; z-index: 98; box-shadow: 0 2px 6px rgba(0,0,0,0.06); flex-wrap: wrap; }
+.btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-save { background: #29608A; color: white; border-color: #29608A; }
+.btn-prevalidate { background: #559FD7; color: white; border-color: #559FD7; }
+.btn-validate { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-cancel { color: #b03a2e; border-color: #b03a2e; }
+.btn-brouillon { color: #7a5c00; border-color: #f0c040; background: #fff8e6; }
+.btn-print { color: #559FD7; border-color: #559FD7; }
+.sep { width: 1px; height: 22px; background: #dde1e5; margin: 0 2px; }
+.sc { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.sc-brouillon { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.sc-prev { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.sc-valide { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.sc-annule { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+.body { padding: 20px 24px; max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.ch { padding: 11px 18px; display: flex; align-items: center; gap: 10px; }
+.ch-blue { background: #29608A; } .ch-green { background: #3d7a14; } .ch-mid { background: #1a5276; } .ch-gray { background: #555; }
+.cht { font-size: 14px; font-weight: bold; color: white; }
+.dot-g { width: 9px; height: 9px; border-radius: 50%; background: #8CC740; flex-shrink: 0; }
+.dot-b { width: 9px; height: 9px; border-radius: 50%; background: #559FD7; flex-shrink: 0; }
+.dot-w { width: 9px; height: 9px; border-radius: 50%; background: white; opacity: 0.7; flex-shrink: 0; }
+.chr { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.cb { padding: 18px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input, .field select, .field textarea { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 14px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus { outline: none; border-color: #559FD7; }
+.field input[readonly] { background: #f4f6f8; color: #888; }
+.sub-title { font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #8CC740; }
+/* LOTS */
+.lots-filters { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.lots-filters select { border: 1px solid #c8cfd8; border-radius: 6px; padding: 7px 11px; font-size: 13px; font-family: Arial, sans-serif; flex: 1; min-width: 150px; }
+.lots-grid { display: flex; flex-direction: column; gap: 8px; }
+.lot-item { border: 1px solid #c8cfd8; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; user-select: none; }
+.lot-item:hover { border-color: #559FD7; background: #f0f7fd; }
+.lot-item.selected { border-color: #8CC740; background: #eaf5d5; }
+.lot-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #8CC740; cursor: pointer; flex-shrink: 0; }
+.lot-info { flex: 1; }
+.lot-ref { font-size: 13px; font-weight: bold; color: #29608A; }
+.lot-item.selected .lot-ref { color: #3d7a14; }
+.lot-details { font-size: 12px; color: #888; margin-top: 2px; }
+.lot-poids { font-size: 13px; font-weight: bold; color: #404041; white-space: nowrap; }
+.lot-qty-wrap { display: flex; flex-direction: column; gap: 3px; min-width: 110px; }
+.lot-qty-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
+.lot-qty-inp { border: 1px solid #c8cfd8; border-radius: 4px; padding: 5px 8px; font-size: 13px; width: 100px; font-family: Arial, sans-serif; }
+.badge-stock { display: inline-block; background: #eaf5d5; border: 1px solid #8CC740; border-radius: 20px; padding: 2px 8px; font-size: 11px; color: #3d7a14; font-weight: bold; }
+.badge-partiel { background: #fff3cd; border: 1px solid #f0c040; color: #7a5c00; }
+.recap-lots { background: #f4f6f8; border: 1px solid #dde1e5; border-radius: 8px; padding: 14px; margin-top: 14px; display: none; }
+.recap-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #dde1e5; }
+.recap-row:last-child { border: none; font-weight: bold; color: #29608A; }
+/* SIG */
+.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
+.sig-block { display: flex; flex-direction: column; gap: 8px; }
+.sig-label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; }
+.sig-box { border: 1px dashed #c8cfd8; border-radius: 8px; height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: #f4f6f8; gap: 4px; }
+.sig-box:hover { border-color: #559FD7; background: #eef5fc; }
+.sig-box.signed { border-style: solid; border-color: #8CC740; background: #f0f9e8; }
+.sig-name { font-size: 13px; font-weight: bold; text-align: center; border-top: 1px solid #dde1e5; padding-top: 6px; }
+.sig-date { font-size: 11px; color: #888; text-align: center; }
+/* JOURNAL */
+.j-entry { display: flex; gap: 12px; margin-bottom: 14px; }
+.j-avatar { width: 32px; height: 32px; border-radius: 50%; background: #29608A; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.j-avatar.sys { background: #888; }
+.j-bubble { flex: 1; }
+.j-meta { font-size: 11px; color: #888; margin-bottom: 3px; }
+.j-text { font-size: 13px; color: #404041; background: #f4f6f8; border-radius: 6px; padding: 8px 12px; border-left: 3px solid #dde1e5; line-height: 1.5; }
+.j-text.sys { border-left-color: #559FD7; color: #888; font-style: italic; }
+.j-text.ext { border-left-color: #e67e22; background: #fef9f0; }
+.jtype-btn { padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #888; font-family: Arial, sans-serif; }
+.jtype-btn.active { background: #29608A; color: white; border-color: #29608A; }
+.jtype-btn.ext-a.active { background: #e67e22; border-color: #e67e22; }
+.lot-banner { background: #eaf5d5; border: 1px solid #8CC740; border-radius: 8px; padding: 10px 14px; display: none; margin-bottom: 14px; }
+.lot-banner-text { font-size: 14px; font-weight: bold; color: #3d7a14; }
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}.sig-grid{grid-template-columns:1fr;}.steps{display:none;}}
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting', 'agent_collecte'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="bsd.html" class="nav-link">&#8592; BSD</a>
+    <a href="decomposition.html" class="nav-link">D&eacute;composition</a>
+    <a href="dashboard_ops.html" class="nav-link">Dashboard</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+
+<div class="docbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div>
+      <div style="font-size:11px;color:#888;">Bordereau de Livraison de D&eacute;chets</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <span style="font-size:18px;font-weight:bold;color:#29608A;">BLD</span>
+        <span style="font-size:14px;font-weight:bold;color:#c8cfd8;font-style:italic;" id="doc-ref">En attente de pr&eacute;-validation</span>
+        <span class="sc sc-brouillon" id="status-chip">Brouillon</span>
+      </div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step active" id="s1">Brouillon</div>
+    <div class="step" id="s2">Pr&eacute;-valid&eacute;</div>
+    <div class="step" id="s3">Valid&eacute;</div>
+  </div>
+</div>
+
+<div class="actbar">
+  <button class="btn btn-save" onclick="sauvegarder()">&#128190; Sauvegarder</button>
+  <div class="sep"></div>
+  <button class="btn btn-prevalidate" id="btn-prev" onclick="prevalider()">&#10003; Pr&eacute;-valider (Agent)</button>
+  <button class="btn btn-validate" id="btn-val" onclick="valider()" disabled>&#10003;&#10003; Valider (Ops)</button>
+  <div class="sep"></div>
+  <button class="btn btn-brouillon" id="btn-brou" onclick="remettreEnBrouillon()" disabled>&#8634; Brouillon</button>
+  <button class="btn btn-cancel" id="btn-ann" onclick="annuler()">&#10006; Annuler</button>
+  <div class="sep"></div>
+  <button class="btn btn-print" id="btn-print" onclick="window.print()" disabled>&#128438; Imprimer</button>
+</div>
+
+<div class="body">
+
+  <div class="lot-banner" id="lot-banner">
+    <span style="font-size:16px;">&#127991;</span>
+    <span class="lot-banner-text">Lot BLD : <span id="lot-val"></span></span>
+  </div>
+
+  <!-- DESTINATAIRE -->
+  <div class="card">
+    <div class="ch ch-blue"><div class="dot-g"></div><span class="cht">Destinataire (Partenaire downstream)</span></div>
+    <div class="cb">
+      <div class="g2">
+        <div class="field">
+          <label>Partenaire *</label>
+          <select id="sel-part" onchange="chargerPartenaire()">
+            <option value="">— S&eacute;lectionner —</option>
+            <option value="idex">IDEX SA</option>
+            <option value="recycleco">RecyclEco Dakar</option>
+            <option value="sotrec">SOTREC</option>
+            <option value="mbeubeuss">D&eacute;charge Mbeubeuss</option>
+            <option value="fabrimetal">Fabrimetal</option>
+            <option value="exporteurope">Export Europe</option>
+          </select>
+        </div>
+        <div class="field"><label>Contact</label><input readonly id="contact-part" placeholder="Auto-rempli"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>T&eacute;l&eacute;phone</label><input readonly id="tel-part" placeholder="Auto-rempli"></div>
+        <div class="field"><label>Adresse</label><input readonly id="adresse-part" placeholder="Auto-rempli"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVRAISON -->
+  <div class="card">
+    <div class="ch ch-green"><div class="dot-b"></div><span class="cht">Informations de livraison</span></div>
+    <div class="cb">
+      <div class="g3">
+        <div class="field">
+          <label>Date de livraison *</label>
+          <input type="datetime-local" id="date-livr">
+        </div>
+        <div class="field">
+          <label>V&eacute;hicule (immatriculation)</label>
+          <input type="text" id="vehicule-immat" placeholder="ex: AA-927-SZ">
+        </div>
+        <div class="field">
+          <label>Nom du chauffeur</label>
+          <input type="text" id="chauffeur-nom" placeholder="Nom et pr&eacute;nom">
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>Num&eacute;ro de lot BLD</label>
+          <input readonly id="num-lot" placeholder="Attribu&eacute; &agrave; la pr&eacute;-validation">
+        </div>
+        <div class="field">
+          <label>Type de traitement</label>
+          <select id="type-traitement">
+            <option value="">— Type —</option>
+            <option>&#9851; Recyclage</option>
+            <option>&#128465; Mise en d&eacute;charge</option>
+            <option>&#10006; Destruction</option>
+            <option>&#128293; Incin&eacute;ration</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sub-title">&#128119; Agents affect&eacute;s</div>
+      <div id="agents-list"></div>
+      <button class="add-line-btn" onclick="ajouterAgent()" style="display:inline-flex;align-items:center;gap:6px;color:#559FD7;font-size:13px;cursor:pointer;padding:8px 0;background:none;border:none;font-family:Arial,sans-serif;">
+        <span style="width:18px;height:18px;border-radius:50%;background:#559FD7;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:13px;line-height:1;flex-shrink:0;">+</span> Ajouter un agent
+      </button>
+    </div>
+  </div>
+
+  <!-- LOTS DECOMP -->
+  <div class="card">
+    <div class="ch ch-mid">
+      <div class="dot-g"></div>
+      <span class="cht">Lots DECOMP &agrave; livrer</span>
+      <div class="chr"><span style="font-size:12px;color:rgba(255,255,255,0.8);" id="lots-count">0 lot(s)</span></div>
+    </div>
+    <div class="cb">
+      <div class="lots-filters">
+        <select id="f-matiere" onchange="filtrerLots()">
+          <option value="">Toutes les mati&egrave;res</option>
+          <option>M&eacute;taux ferreux</option>
+          <option>Aluminium</option>
+          <option>Plastique</option>
+          <option>Circuits imprim&eacute;s (PCB)</option>
+          <option>Papier / Carton</option>
+          <option>Cuivre</option>
+          <option>Verre</option>
+        </select>
+        <select id="f-client" onchange="filtrerLots()">
+          <option value="">Tous les clients source</option>
+          <option>Orange S&eacute;n&eacute;gal</option>
+          <option>Sonatel</option>
+          <option>EGMT</option>
+          <option>Transport I. Sakho</option>
+          <option>GMD</option>
+          <option>SENEAU</option>
+        </select>
+        <select id="f-statut" onchange="filtrerLots()">
+          <option value="">Tous statuts</option>
+          <option value="stock">En stock</option>
+          <option value="partiel">Partiel</option>
+        </select>
+      </div>
+      <div id="lots-empty" style="text-align:center;color:#888;padding:20px;display:none;">Aucun lot pour ces filtres.</div>
+      <div class="lots-grid" id="lots-grid"></div>
+      <div class="recap-lots" id="recap-lots">
+        <div style="font-size:12px;font-weight:bold;color:#29608A;text-transform:uppercase;margin-bottom:8px;">R&eacute;capitulatif</div>
+        <div id="recap-rows"></div>
+        <div class="recap-row"><span>Poids total BLD</span><span id="total-poids">0 kg</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFOS COMPLÉMENTAIRES + SIGNATURES -->
+  <div class="card">
+    <div class="ch ch-blue"><div class="dot-b"></div><span class="cht">Informations compl&eacute;mentaires &amp; Signatures</span></div>
+    <div class="cb">
+      <div class="g2">
+        <div class="field"><label>N&deg; certificat partenaire</label><input type="text" placeholder="ex: CERT-2026-001"></div>
+        <div class="field"><label>R&eacute;f. document partenaire</label><input type="text" placeholder="R&eacute;f. bon de r&eacute;ception"></div>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Observations</label>
+        <textarea placeholder="Notes sur la livraison..." style="min-height:60px;resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea>
+      </div>
+      <div class="sub-title">Signatures</div>
+      <div class="sig-grid">
+        <div class="sig-block">
+          <div class="sig-label">Signature agent SetTIC</div>
+          <div class="sig-box" id="sig-agent" onclick="signer('agent')">
+            <span style="font-size:20px;">&#9998;</span>
+            <span style="font-size:12px;color:#888;">Cliquer pour signer</span>
+          </div>
+          <div class="sig-name" id="sig-agent-name"></div>
+          <div class="sig-date" id="sig-agent-date"></div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-label">Signature partenaire</div>
+          <div class="sig-box" id="sig-part" onclick="signer('part')">
+            <span style="font-size:20px;">&#9998;</span>
+            <span style="font-size:12px;color:#888;">Cliquer pour signer</span>
+          </div>
+          <div class="sig-name" id="sig-part-name"></div>
+          <div class="sig-date" id="sig-part-date"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="card">
+    <div class="ch ch-gray"><div class="dot-w"></div><span class="cht">Journal interne</span><div class="chr"><span style="font-size:11px;color:rgba(255,255,255,0.6);">Confidentiel</span></div></div>
+    <div class="cb">
+      <div id="journal-entries"></div>
+      <div style="border-top:1px solid #dde1e5;padding-top:14px;display:flex;gap:10px;align-items:flex-start;margin-top:14px;">
+        <div class="j-avatar" id="j-avatar">BT</div>
+        <div style="flex:1;">
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="jtype-btn active" onclick="setJType('interne',this)">Note interne</button>
+            <button class="jtype-btn ext-a" onclick="setJType('externe',this)">Message PARTENAIRE</button>
+          </div>
+          <textarea id="j-input" rows="3" placeholder="Ajouter une note..." style="width:100%;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;resize:vertical;"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+            <button class="btn btn-save" onclick="envoyerJournal()">Envoyer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var PARTENAIRES = {
+  idex:        { nom:'IDEX SA', tel:'77 931 89 26', adresse:'Zone Industrielle, Dakar', contact:'Abdoulaye SECK' },
+  recycleco:   { nom:'RecyclEco Dakar', tel:'33 800 11 22', adresse:'Zone Industrielle, Dakar', contact:'Directeur technique' },
+  sotrec:      { nom:'SOTREC', tel:'33 834 56 78', adresse:'Route de Rufisque', contact:'Responsable logistique' },
+  mbeubeuss:   { nom:'Décharge Mbeubeuss', tel:'', adresse:'Mbeubeuss, Dakar', contact:'' },
+  fabrimetal:  { nom:'Fabrimetal', tel:'33 800 20 00', adresse:'Zone Industrielle, Dakar', contact:'Contact Fabrimetal' },
+  exporteurope:{ nom:'Export Europe', tel:'33 800 30 00', adresse:'Port de Dakar', contact:'Contact Export Europe' },
+};
+
+var AGENTS_DB = [
+  { id:'woulare', nom:'Ibrahima WOULARE', initiales:'IW', color:'#29608A' },
+  { id:'tapha',   nom:'Tapha',            initiales:'TA', color:'#3d7a14' },
+  { id:'adama',   nom:'ADAMA NGUER',      initiales:'AN', color:'#1a5276' },
+  { id:'ahmed',   nom:'Ahmed DIAGNE',     initiales:'AD', color:'#7d3c98' },
+];
+
+var LOTS_STOCK = [
+  { ref:'N°/27/03/2026/DECOMP/001', matiere:'Métaux ferreux', bsd:'05000', client:'Orange Sénégal', poids:45.0, emplacement:'Zone A / Bac A-01', statut:'stock' },
+  { ref:'N°/27/03/2026/DECOMP/002', matiere:'Plastique', bsd:'05000', client:'Orange Sénégal', poids:30.0, emplacement:'Zone B / Palette B-01', statut:'stock' },
+  { ref:'N°/27/03/2026/DECOMP/003', matiere:'Circuits imprimés (PCB)', bsd:'05000', client:'Orange Sénégal', poids:15.0, emplacement:'Zone C / Caisse C-01', statut:'stock' },
+  { ref:'N°/24/03/2026/DECOMP/005', matiere:'Aluminium', bsd:'04997', client:'Sonatel', poids:22.0, poidsDisponible:18.0, emplacement:'Zone A / Bac A-02', statut:'partiel' },
+  { ref:'N°/24/03/2026/DECOMP/006', matiere:'Métaux ferreux', bsd:'04997', client:'Sonatel', poids:35.0, emplacement:'Zone A / Bac A-03', statut:'stock' },
+  { ref:'N°/22/03/2026/DECOMP/008', matiere:'Papier / Carton', bsd:'04995', client:'EGMT', poids:80.0, emplacement:'Zone D / Bac D-01', statut:'stock' },
+];
+
+var jType = 'interne';
+var bldStatut = 'brouillon';
+var sigAgent = false, sigPart = false;
+
+window.onload = function() {
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('date-livr').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  var role = localStorage.getItem('wastify_role') || 'ops';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+  var init = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  document.getElementById('j-avatar').textContent = init;
+  // Agent connecté = responsable par défaut
+  ajouterAgent(user, init, true);
+  // Agents ne peuvent que pré-valider
+  if (role === 'agent') document.getElementById('btn-val').style.display = 'none';
+  renderLots(LOTS_STOCK);
+  addJAuto('BLD créé par ' + user);
+};
+
+function chargerPartenaire() {
+  var v = document.getElementById('sel-part').value;
+  var p = PARTENAIRES[v];
+  if (!p) return;
+  document.getElementById('tel-part').value = p.tel;
+  document.getElementById('adresse-part').value = p.adresse;
+  document.getElementById('contact-part').value = p.contact;
+}
+
+// AGENTS
+function ajouterAgent(nomAgent, initiales, isResp) {
+  var list = document.getElementById('agents-list');
+  var isFirst = isResp || list.children.length === 0;
+  var aO = AGENTS_DB.map(function(a){return '<option value="'+a.id+'">'+a.nom+'</option>';}).join('');
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:10px;border-radius:8px;padding:8px 12px;border:1px solid '+(isFirst?'#8CC740':'#dde1e5')+';background:'+(isFirst?'#eaf5d5':'white')+';margin-bottom:6px;';
+  var color = isFirst ? '#3d7a14' : '#29608A';
+  var initDisp = initiales || '?';
+  if (nomAgent) {
+    div.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;">'+initDisp+'</div>'+
+      '<div style="flex:1;font-size:13px;font-weight:bold;color:'+(isFirst?'#3d7a14':'#404041')+';">'+nomAgent+'</div>'+
+      '<span style="font-size:11px;color:#888;">'+(isFirst?'★ Responsable':'Agent')+'</span>';
+  } else {
+    div.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;">?</div>'+
+      '<div style="flex:1;"><select style="border:1px solid #c8cfd8;border-radius:6px;padding:6px 10px;font-size:13px;font-family:Arial,sans-serif;width:100%;">'+aO+'</select></div>'+
+      '<span style="font-size:11px;color:#888;">'+(isFirst?'★ Responsable':'Agent')+'</span>'+
+      '<button onclick="this.closest(\'div\').remove();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>';
+  }
+  list.appendChild(div);
+}
+
+// LOTS
+function filtrerLots() {
+  var mat = document.getElementById('f-matiere').value.toLowerCase();
+  var cli = document.getElementById('f-client').value.toLowerCase();
+  var stat = document.getElementById('f-statut').value;
+  var filtered = LOTS_STOCK.filter(function(l) {
+    var okM = !mat || l.matiere.toLowerCase().includes(mat.split(' ')[0]);
+    var okC = !cli || l.client.toLowerCase().includes(cli.split(' ')[0]);
+    var okS = !stat || l.statut === stat;
+    return okM && okC && okS;
+  });
+  renderLots(filtered);
+}
+
+function renderLots(data) {
+  document.getElementById('lots-count').textContent = data.length + ' lot(s) en stock';
+  var empty = document.getElementById('lots-empty');
+  var grid = document.getElementById('lots-grid');
+  if (data.length === 0) { empty.style.display='block'; grid.innerHTML=''; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = data.map(function(lot, i) {
+    var dispo = lot.statut === 'partiel' ? lot.poidsDisponible : lot.poids;
+    var bc = lot.statut === 'partiel' ? 'badge-partiel' : 'badge-stock';
+    var bl = lot.statut === 'partiel' ? 'Partiel ('+dispo+' kg)' : 'En stock';
+    return '<label class="lot-item" id="li-'+i+'">' +
+      '<input type="checkbox" id="lc-'+i+'" onchange="updateRecap()">' +
+      '<div class="lot-info">' +
+        '<div class="lot-ref">'+lot.ref+'</div>' +
+        '<div class="lot-details">'+lot.matiere+' — BSD: '+lot.bsd+' ('+lot.client+') — 📍 '+lot.emplacement+'</div>' +
+      '</div>' +
+      '<span class="badge-stock '+bc+'">'+bl+'</span>' +
+      '<div class="lot-qty-wrap">' +
+        '<div class="lot-qty-lbl">Poids (kg)</div>' +
+        '<input type="number" class="lot-qty-inp" id="lq-'+i+'" value="'+dispo+'" max="'+dispo+'" min="0.1" step="0.1" onclick="event.stopPropagation()" onchange="updateRecap()">' +
+      '</div>' +
+      '<div class="lot-poids">'+lot.poids.toFixed(1)+' kg</div>' +
+      '</label>';
+  }).join('');
+}
+
+function updateRecap() {
+  var selected = [];
+  var total = 0;
+  LOTS_STOCK.forEach(function(lot, i) {
+    var cb = document.getElementById('lc-'+i);
+    var item = document.getElementById('li-'+i);
+    if (cb && cb.checked) {
+      if (item) item.classList.add('selected');
+      var qty = parseFloat((document.getElementById('lq-'+i)||{}).value) || 0;
+      total += qty;
+      selected.push({ref:lot.ref, matiere:lot.matiere, poids:qty});
+    } else if (item) item.classList.remove('selected');
+  });
+  var recap = document.getElementById('recap-lots');
+  if (selected.length > 0) {
+    recap.style.display = 'block';
+    document.getElementById('recap-rows').innerHTML = selected.map(function(s){
+      return '<div class="recap-row"><span>'+s.ref.split('/').slice(-2).join('/')+' — '+s.matiere+'</span><span>'+s.poids.toFixed(1)+' kg</span></div>';
+    }).join('');
+    document.getElementById('total-poids').textContent = total.toFixed(1) + ' kg';
+  } else { recap.style.display = 'none'; }
+}
+
+// WORKFLOW
+function prevalider() {
+  var part = document.getElementById('sel-part').value;
+  if (!part) { alert('Sélectionnez un partenaire.'); return; }
+  var selected = LOTS_STOCK.filter(function(l,i){var cb=document.getElementById('lc-'+i); return cb&&cb.checked;});
+  if (selected.length === 0) { alert('Sélectionnez au moins un lot DECOMP.'); return; }
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  var ref = 'DIA/BLD/'+now.getFullYear()+'/0'+(2000+Math.floor(Math.random()*100));
+  var lot = 'N°/'+pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear()+'/BLD/'+ref.split('/').pop();
+  document.getElementById('doc-ref').textContent = ref;
+  document.getElementById('doc-ref').style.color = '#559FD7';
+  document.getElementById('doc-ref').style.fontStyle = 'normal';
+  document.getElementById('num-lot').value = lot;
+  document.getElementById('lot-val').textContent = lot;
+  document.getElementById('lot-banner').style.display = 'flex';
+  document.getElementById('status-chip').textContent = 'Pré-validé';
+  document.getElementById('status-chip').className = 'sc sc-prev';
+  document.getElementById('s1').className = 'step done';
+  document.getElementById('s2').className = 'step active';
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-val').disabled = false;
+  document.getElementById('btn-brou').disabled = false;
+  document.getElementById('btn-print').disabled = false;
+  bldStatut = 'prevalide';
+  addJAuto('BLD pré-validé — Réf: '+ref+' — '+selected.length+' lot(s)');
+  alert('BLD pré-validé !\nRéférence : '+ref+'\nLot BLD : '+lot);
+}
+
+function valider() {
+  document.getElementById('status-chip').textContent = 'Validé';
+  document.getElementById('status-chip').className = 'sc sc-valide';
+  document.getElementById('s2').className = 'step done';
+  document.getElementById('s3').className = 'step active';
+  document.getElementById('btn-val').disabled = true;
+  bldStatut = 'valide';
+  addJAuto('BLD validé définitivement par '+(localStorage.getItem('wastify_user')||'Ops'));
+  alert('BLD validé !');
+}
+
+function remettreEnBrouillon() {
+  if (!confirm('Remettre en brouillon ?')) return;
+  document.getElementById('status-chip').textContent = 'Brouillon';
+  document.getElementById('status-chip').className = 'sc sc-brouillon';
+  document.getElementById('s1').className = 'step active';
+  document.getElementById('s2').className = 'step';
+  document.getElementById('s3').className = 'step';
+  document.getElementById('btn-prev').disabled = false;
+  document.getElementById('btn-val').disabled = true;
+  document.getElementById('btn-brou').disabled = true;
+  bldStatut = 'brouillon';
+  addJAuto('BLD remis en brouillon');
+}
+
+function annuler() {
+  var raison = prompt('Raison de l\'annulation (obligatoire) :');
+  if (!raison||!raison.trim()) { alert('Raison obligatoire.'); return; }
+  document.getElementById('status-chip').textContent = 'Annulé';
+  document.getElementById('status-chip').className = 'sc sc-annule';
+  document.getElementById('s1').className = 'step cancelled';
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-val').disabled = true;
+  document.getElementById('btn-brou').disabled = true;
+  document.getElementById('btn-ann').disabled = true;
+  bldStatut = 'annule';
+  addJAuto('BLD ANNULÉ. Raison : '+raison);
+}
+
+function signer(type) {
+  var user = localStorage.getItem('wastify_user') || 'Agent SetTIC';
+  var nom = type==='agent' ? user : (document.getElementById('contact-part').value||'Représentant partenaire');
+  var couleur = type==='agent' ? '#29608A' : '#3d7a14';
+  var box = document.getElementById('sig-'+type);
+  box.classList.add('signed');
+  box.innerHTML = '<svg width="120" height="55" viewBox="0 0 120 55"><path d="M10,42 Q25,8 45,28 Q60,48 80,15 Q95,2 112,22" stroke="'+couleur+'" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>';
+  document.getElementById('sig-'+type+'-name').textContent = nom;
+  document.getElementById('sig-'+type+'-date').innerHTML = formatDate(new Date());
+  if (type==='agent') sigAgent=true; else sigPart=true;
+  addJAuto('Signature '+(type==='agent'?'agent':'partenaire')+' : '+nom);
+}
+
+function sauvegarder() { addJAuto('Sauvegarde brouillon'); alert('BLD sauvegardé.'); }
+
+function setJType(t, btn) {
+  jType = t;
+  document.querySelectorAll('.jtype-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function formatDate(d) {
+  var pad = function(n){return String(n).padStart(2,'0');};
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' à '+pad(d.getHours())+'h'+pad(d.getMinutes());
+}
+
+function addJAuto(txt) {
+  var el = document.getElementById('journal-entries');
+  var div = document.createElement('div');
+  div.className = 'j-entry';
+  div.innerHTML = '<div class="j-avatar sys">⚙</div><div class="j-bubble"><div class="j-meta">Système — '+formatDate(new Date())+'</div><div class="j-text sys">'+txt+'</div></div>';
+  el.appendChild(div);
+}
+
+function envoyerJournal() {
+  var txt = document.getElementById('j-input').value.trim();
+  if (!txt) return;
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  var init = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var el = document.getElementById('journal-entries');
+  var div = document.createElement('div');
+  div.className = 'j-entry';
+  var isExt = jType === 'externe';
+  div.innerHTML = '<div class="j-avatar">'+init+'</div><div class="j-bubble"><div class="j-meta"><strong>'+user+'</strong> — '+formatDate(new Date())+' — <span style="color:'+(isExt?'#e67e22':'#29608A')+';font-style:italic;">'+(isExt?'Message PARTENAIRE':'Note interne')+'</span></div><div class="j-text'+(isExt?' ext':'')+'">'+txt+'</div></div>';
+  el.appendChild(div);
+  document.getElementById('j-input').value = '';
+  div.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+</script>
+</body>
+</html>

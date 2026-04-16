@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Rapport Listing</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+.page-bar { background: white; border-bottom: 1px solid #dde1e5; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.page-title { font-size: 18px; font-weight: bold; color: #29608A; }
+.body { padding: 20px 24px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #29608A; color: white; border-color: #29608A; }
+.btn-green { background: #8CC740; color: white; border-color: #8CC740; }
+/* ÉTAPE 1 - FILTRES */
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 11px 18px; display: flex; align-items: center; gap: 10px; }
+.card-head-blue { background: #29608A; }
+.card-head-green { background: #3d7a14; }
+.card-head-title { font-size: 14px; font-weight: bold; color: white; }
+.dot-g { width: 9px; height: 9px; border-radius: 50%; background: #8CC740; flex-shrink: 0; }
+.dot-b { width: 9px; height: 9px; border-radius: 50%; background: #559FD7; flex-shrink: 0; }
+.card-head-right { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.card-body { padding: 18px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; }
+.field input, .field select { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 13px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus { outline: none; border-color: #559FD7; }
+/* ÉTAPE 2 - SÉLECTION BSD */
+.bsd-select-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom:14px; }
+.bsd-card { border: 1px solid #c8cfd8; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; user-select: none; }
+.bsd-card:hover { border-color: #559FD7; background: #f0f7fd; }
+.bsd-card.selected { border-color: #8CC740; background: #eaf5d5; }
+.bsd-card input[type=checkbox] { width: 15px; height: 15px; accent-color: #8CC740; cursor: pointer; }
+.bsd-ref { font-size: 13px; font-weight: bold; color: #29608A; margin: 4px 0 2px; }
+.bsd-card.selected .bsd-ref { color: #3d7a14; }
+.bsd-info { font-size: 11px; color: #888; }
+.bsd-poids { font-size: 12px; font-weight: bold; color: #404041; margin-top: 4px; }
+/* RÉCAP BSD SÉLECTIONNÉS */
+.recap-bar { background: #e8f0f7; border: 1px solid #559FD7; border-radius: 8px; padding: 10px 14px; display: none; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; margin-bottom: 14px; }
+.recap-bar.visible { display: flex; }
+.recap-item { display: flex; flex-direction: column; gap: 2px; }
+.recap-item-label { font-size: 10px; color: #888; text-transform: uppercase; }
+.recap-item-val { font-size: 14px; font-weight: bold; color: #29608A; }
+/* LISTING TABLE */
+.listing-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1000px; }
+.listing-table th { padding: 8px 8px; text-align: left; font-size: 10px; font-weight: bold; color: #29608A; border-bottom: 2px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; white-space: nowrap; }
+.listing-table th.col-carte { background: #fffbf0; color: #7a5c00; }
+.listing-table th.col-serie { background: #f0f7fd; color: #1a5276; }
+.listing-table td { padding: 6px 8px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; }
+.listing-table td input, .listing-table td select { border: 1px solid #c8cfd8; border-radius: 4px; padding: 4px 6px; font-size: 12px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.listing-table td.auto { background: #f8f9fa; color: #888; font-size: 11px; }
+.listing-table td.col-carte { background: #fffdf5; }
+.listing-table td.col-serie { background: #f5f9fd; }
+.serie-error { border-color: #e74c3c !important; background: #fff5f5 !important; }
+.na-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; }
+.na-label input[type=checkbox] { width: 14px; height: 14px; accent-color: #8CC740; cursor: pointer; }
+/* AUTOCOMPLETE */
+.ac-wrap { position: relative; }
+.ac-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #c8cfd8; border-top: none; border-radius: 0 0 6px 6px; max-height: 160px; overflow-y: auto; z-index: 300; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; }
+.ac-list.open { display: block; }
+.ac-item { padding: 7px 12px; font-size: 12px; cursor: pointer; }
+.ac-item:hover { background: #f0f7fd; color: #29608A; }
+.ac-item.new-item { color: #8CC740; font-style: italic; }
+.add-line-btn { display: inline-flex; align-items: center; gap: 6px; color: #559FD7; font-size: 13px; cursor: pointer; padding: 10px 0; background: none; border: none; font-family: Arial, sans-serif; }
+.add-line-btn:hover { text-decoration: underline; }
+.plus-c { width: 18px; height: 18px; border-radius: 50%; background: #559FD7; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; flex-shrink: 0; }
+.table-footer { padding: 12px 18px; border-top: 1px solid #dde1e5; display: flex; align-items: center; justify-content: space-between; background: #f4f6f8; font-size: 12px; flex-wrap: wrap; gap: 8px; }
+@media (max-width:900px) { .g2,.g3 { grid-template-columns:1fr; } .bsd-select-grid { grid-template-columns:1fr 1fr; } }
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="rapport_collecte.html" class="nav-link">&#8592; Rapport collecte</a>
+    <a href="dashboard_ops.html" class="nav-link">Dashboard</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+<div class="page-bar">
+  <div class="page-title">&#128203; Rapport Listing — Détail équipements</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" onclick="window.print()">&#128438; Imprimer</button>
+    <button class="btn btn-green" onclick="alert('Export Excel...')">&#128190; Export Excel</button>
+    <button class="btn btn-primary" onclick="alert('Export PDF client...')">&#128196; Export PDF client</button>
+  </div>
+</div>
+<div class="body">
+
+  <!-- ÉTAPE 1 : FILTRES -->
+  <div class="card">
+    <div class="card-head card-head-blue"><div class="dot-g"></div><span class="card-head-title">Étape 1 — Choisir la période et le client</span></div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field"><label>Période — du</label><input type="date" id="date-debut" value="2026-01-01" onchange="chargerBSD()"></div>
+        <div class="field"><label>Au</label><input type="date" id="date-fin" value="2026-03-31" onchange="chargerBSD()"></div>
+        <div class="field">
+          <label>Client</label>
+          <select id="sel-client" onchange="chargerBSD()">
+            <option value="">Tous les clients</option>
+            <option value="orange">Orange Sénégal</option>
+            <option value="sonatel">Sonatel</option>
+            <option value="egmt">EGMT</option>
+            <option value="tis">Transport I. Sakho</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 2 : SÉLECTION BSD -->
+  <div class="card" id="card-bsd-select" style="display:none;">
+    <div class="card-head card-head-green">
+      <div class="dot-b"></div>
+      <span class="card-head-title">Étape 2 — Sélectionner les BSD</span>
+      <div class="card-head-right">
+        <label style="display:flex;align-items:center;gap:6px;color:white;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="cb-tous" onchange="tousLesBSD()" style="width:15px;height:15px;accent-color:#8CC740;cursor:pointer;"> Sélectionner tout
+        </label>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="bsd-select-grid" id="bsd-grid"></div>
+      <div class="recap-bar" id="recap-bar">
+        <div class="recap-item"><div class="recap-item-label">BSD sélectionnés</div><div class="recap-item-val" id="rc-nb">0</div></div>
+        <div class="recap-item"><div class="recap-item-label">Poids total</div><div class="recap-item-val" id="rc-poids">0 kg</div></div>
+        <div class="recap-item"><div class="recap-item-label">Clients</div><div class="recap-item-val" id="rc-clients">—</div></div>
+        <div class="recap-item"><div class="recap-item-label">Période</div><div class="recap-item-val" id="rc-periode">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 3 : LISTING -->
+  <div class="card" id="card-listing" style="display:none;">
+    <div class="card-head card-head-blue">
+      <div class="dot-g"></div>
+      <span class="card-head-title">Étape 3 — Listing des équipements</span>
+      <div class="card-head-right">
+        <span style="font-size:11px;color:rgba(255,255,255,0.8);">Jaune = cartouches • Bleu = N° série</span>
+      </div>
+    </div>
+    <div style="background:#fff8e6;border-bottom:1px solid #f0c040;padding:8px 18px;font-size:12px;color:#7a5c00;">
+      ⚠️ N° de série saisi → Qté = 1 obligatoire et unique dans le système. Sans N° série → cocher N/A → Qté libre.
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="listing-table">
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th style="width:75px;">Date</th>
+            <th style="width:38px;" class="">Mois</th>
+            <th style="width:38px;">Trim.</th>
+            <th style="width:100px;">N° BSD</th>
+            <th style="width:100px;">Client</th>
+            <th style="width:80px;">Sous-client</th>
+            <th style="width:80px;">Site</th>
+            <th style="width:110px;">Type matériel</th>
+            <th style="width:75px;">Marque</th>
+            <th style="width:85px;">Modèle</th>
+            <th style="width:95px;" class="col-carte">Caractéristique</th>
+            <th style="width:100px;" class="col-serie">N° de série</th>
+            <th style="width:35px;" class="col-serie">N/A</th>
+            <th style="width:50px;">Qté</th>
+            <th style="width:22px;"></th>
+          </tr>
+        </thead>
+        <tbody id="listing-tbody"></tbody>
+      </table>
+    </div>
+    <button class="add-line-btn" style="padding:10px 18px;" onclick="ajouterLigne()"><span class="plus-c">+</span> Ajouter une ligne</button>
+    <div class="table-footer">
+      <div style="color:#888;">Total équipements : <strong id="total-qte" style="color:#29608A;">0</strong></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green" onclick="alert('Listing sauvegardé !')">&#128190; Sauvegarder</button>
+        <button class="btn btn-primary" onclick="alert('Export Excel listing...')">Export Excel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var BSD_DATA = [
+  { ref:'DIA/BSD/2026/05000', annee:'2026', lot:'N°/27/03/2026/BSD/05000', client:'Orange Sénégal', clientId:'orange', date:'27/03/2026', mois:'Mars', trim:'T1', site:'Diamniadio', poids:195.0 },
+  { ref:'DIA/BSD/2026/04999', annee:'2026', lot:'N°/26/03/2026/BSD/04999', client:'Transp. I. Sakho', clientId:'tis', date:'26/03/2026', mois:'Mars', trim:'T1', site:'Route Rufisque', poids:120.0 },
+  { ref:'DIA/BSD/2026/04998', annee:'2026', lot:'N°/25/03/2026/BSD/04998', client:'Orange Sénégal', clientId:'orange', date:'25/03/2026', mois:'Mars', trim:'T1', site:'Almadies', poids:88.0 },
+  { ref:'DIA/BSD/2026/04997', annee:'2026', lot:'N°/24/03/2026/BSD/04997', client:'Sonatel', clientId:'sonatel', date:'24/03/2026', mois:'Mars', trim:'T1', site:'Plateau', poids:210.0 },
+  { ref:'DIA/BSD/2026/04996', annee:'2026', lot:'—', client:'EGMT', clientId:'egmt', date:'23/03/2026', mois:'Mars', trim:'T1', site:'Diamniadio', poids:55.0 },
+];
+
+var TYPES = ['Ordinateur portable','Unité centrale','Ecran','Imprimante','Copieur','Téléphone mobile','Tablette','Serveur','Disque dur','Cartouche encre','Cartouche toner','Toner bidon','Pile / Batterie','Autre'];
+var MARQUES = ['HP','Dell','Lenovo','Apple','Samsung','Canon','Epson','Xerox','Brother','Acer','Asus','Autre'];
+var MODELES = ['EliteBook 840','ProBook 450','OptiPlex 7050','Latitude E5470','ThinkPad T480','MacBook Pro','Galaxy A52','LBP6030','CF280A'];
+var CARACT = ['Toner','Toner Bidon','Jet d\'encre'];
+var SERIES = ['DL7050-2341','HP840-5522','CN6030-8891'];
+var allMarques = MARQUES.slice();
+var allModeles = MODELES.slice();
+var bsdFiltres = [];
+
+function chargerBSD() {
+  var client = document.getElementById('sel-client').value;
+  bsdFiltres = client ? BSD_DATA.filter(function(b){ return b.clientId === client; }) : BSD_DATA;
+  var grid = document.getElementById('bsd-grid');
+  grid.innerHTML = bsdFiltres.map(function(b, i) {
+    return '<label class="bsd-card" id="bsd-card-'+i+'">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<input type="checkbox" id="bsd-cb-'+i+'" onchange="updateRecap()">' +
+        '<div class="bsd-ref">'+b.ref.replace('DIA/BSD/','')+'</div>' +
+      '</div>' +
+      '<div class="bsd-info">'+b.client+' — '+b.date+'</div>' +
+      '<div class="bsd-info">Lot: '+b.lot.substring(0,20)+'...</div>' +
+      '<div class="bsd-poids">'+b.poids.toFixed(1)+' kg</div>' +
+      '</label>';
+  }).join('');
+  document.getElementById('card-bsd-select').style.display = 'block';
+  document.getElementById('card-listing').style.display = 'none';
+  document.getElementById('cb-tous').checked = false;
+  document.getElementById('recap-bar').classList.remove('visible');
+}
+
+function tousLesBSD() {
+  var checked = document.getElementById('cb-tous').checked;
+  bsdFiltres.forEach(function(b, i) {
+    var cb = document.getElementById('bsd-cb-'+i);
+    var card = document.getElementById('bsd-card-'+i);
+    if (cb) { cb.checked = checked; if (card) card.classList.toggle('selected', checked); }
+  });
+  updateRecap();
+}
+
+function updateRecap() {
+  var selected = [];
+  var totalPoids = 0;
+  bsdFiltres.forEach(function(b, i) {
+    var cb = document.getElementById('bsd-cb-'+i);
+    var card = document.getElementById('bsd-card-'+i);
+    if (cb && cb.checked) {
+      card.classList.add('selected');
+      selected.push(b);
+      totalPoids += b.poids;
+    } else if (card) {
+      card.classList.remove('selected');
+    }
+  });
+  if (selected.length > 0) {
+    var clients = [...new Set(selected.map(function(b){return b.client;}))].join(', ');
+    document.getElementById('rc-nb').textContent = selected.length;
+    document.getElementById('rc-poids').textContent = totalPoids.toFixed(1) + ' kg';
+    document.getElementById('rc-clients').textContent = clients;
+    document.getElementById('rc-periode').textContent = selected[selected.length-1].date + ' → ' + selected[0].date;
+    document.getElementById('recap-bar').classList.add('visible');
+    // Afficher le listing avec données pré-remplies
+    chargerListing(selected);
+    document.getElementById('card-listing').style.display = 'block';
+  } else {
+    document.getElementById('recap-bar').classList.remove('visible');
+    document.getElementById('card-listing').style.display = 'none';
+  }
+}
+
+function chargerListing(bsds) {
+  var tbody = document.getElementById('listing-tbody');
+  tbody.innerHTML = '';
+  // Données fictives pré-remplies pour la démo
+  var exemples = [
+    { date:'27/03/2026', mois:'Mars', trim:'T1', bsd:'05000', client:'Orange Sénégal', sousCli:'', site:'Diamniadio', type:'Unité centrale', marque:'Dell', modele:'OptiPlex 7050', caract:'', serie:'DL7050-2341', na:false, qte:1 },
+    { date:'27/03/2026', mois:'Mars', trim:'T1', bsd:'05000', client:'Orange Sénégal', sousCli:'', site:'Diamniadio', type:'Imprimante', marque:'HP', modele:'LBP6030', caract:'', serie:'', na:true, qte:5 },
+    { date:'27/03/2026', mois:'Mars', trim:'T1', bsd:'05000', client:'Orange Sénégal', sousCli:'', site:'Diamniadio', type:'Cartouche toner', marque:'HP', modele:'CF280A', caract:'Toner', serie:'', na:true, qte:12 },
+  ];
+  exemples.forEach(function(e){ ajouterLigneData(e); });
+  updateTotal();
+}
+
+function ajouterLigne() {
+  var bsds = [];
+  bsdFiltres.forEach(function(b,i){ var cb=document.getElementById('bsd-cb-'+i); if(cb&&cb.checked) bsds.push(b); });
+  var firstBSD = bsds.length > 0 ? bsds[0] : null;
+  ajouterLigneData({
+    date: firstBSD ? firstBSD.date : '',
+    mois: firstBSD ? firstBSD.mois : '',
+    trim: firstBSD ? firstBSD.trim : '',
+    bsd: firstBSD ? firstBSD.ref.split('/').pop() : '',
+    client: firstBSD ? firstBSD.client : '',
+    sousCli:'', site: firstBSD ? firstBSD.site : '',
+    type:'Unité centrale', marque:'', modele:'', caract:'', serie:'', na:false, qte:1
+  });
+}
+
+function ajouterLigneData(e) {
+  var tbody = document.getElementById('listing-tbody');
+  var num = tbody.rows.length + 1;
+  var tO = TYPES.map(function(t){return '<option'+(t===e.type?' selected':'')+'>'+t+'</option>';}).join('');
+  var cO = CARACT.map(function(c){return '<option'+(c===e.caract?' selected':'')+'>'+c+'</option>';}).join('');
+  var isCart = e.type.toLowerCase().includes('cartouche') || e.type.toLowerCase().includes('toner');
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td class="auto" style="text-align:center;">'+num+'</td>' +
+    '<td class="auto">'+e.date+'</td>' +
+    '<td class="auto">'+e.mois+'</td>' +
+    '<td class="auto">'+e.trim+'</td>' +
+    '<td class="auto" style="font-size:11px;font-weight:bold;color:#559FD7;">'+e.bsd+'</td>' +
+    '<td class="auto">'+e.client+'</td>' +
+    '<td><input type="text" value="'+e.sousCli+'" placeholder="Sous-client" style="width:75px;"></td>' +
+    '<td><input type="text" value="'+e.site+'" style="width:70px;"></td>' +
+    '<td><select class="type-sel" onchange="toggleCaract(this)">'+tO+'</select></td>' +
+    '<td><div class="ac-wrap"><input type="text" value="'+e.marque+'" class="marque-inp" placeholder="Marque" autocomplete="off" oninput="acInput(this,\'marque\')"><div class="ac-list"></div></div></td>' +
+    '<td><div class="ac-wrap"><input type="text" value="'+e.modele+'" class="modele-inp" placeholder="Modèle" autocomplete="off" oninput="acInput(this,\'modele\')"><div class="ac-list"></div></div></td>' +
+    '<td class="col-carte"><select class="caract-sel" style="'+(isCart?'':'opacity:0.3;pointer-events:none;')+'">'+cO+'</select></td>' +
+    '<td class="col-serie"><input type="text" class="serie-inp" value="'+(e.na?'N/A':e.serie)+'" placeholder="N° série" '+(e.na?'disabled style="background:#f4f6f8;"':'')+' oninput="verifierSerie(this)" onchange="serieChange(this)"></td>' +
+    '<td class="col-serie" style="text-align:center;"><label class="na-label"><input type="checkbox" '+(e.na?'checked':'')+' onchange="toggleNA(this)"></label></td>' +
+    '<td><input type="number" class="qte-inp" value="'+e.qte+'" min="1" '+(e.na?'':'max="1"')+' style="width:45px;" onchange="updateTotal()"></td>' +
+    '<td><button onclick="this.closest(\'tr\').remove();renumeroter();updateTotal();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:14px;">&#215;</button></td>';
+  tbody.appendChild(tr);
+}
+
+function toggleCaract(sel) {
+  var tr = sel.closest('tr');
+  var type = sel.value.toLowerCase();
+  var isCart = type.includes('cartouche') || type.includes('toner');
+  var cs = tr.querySelector('.caract-sel');
+  cs.style.opacity = isCart ? '1' : '0.3';
+  cs.style.pointerEvents = isCart ? 'auto' : 'none';
+}
+
+function toggleNA(cb) {
+  var tr = cb.closest('tr');
+  var serieInp = tr.querySelector('.serie-inp');
+  var qteInp = tr.querySelector('.qte-inp');
+  if (cb.checked) {
+    serieInp.value = 'N/A'; serieInp.disabled = true; serieInp.style.background = '#f4f6f8';
+    qteInp.removeAttribute('max');
+  } else {
+    serieInp.value = ''; serieInp.disabled = false; serieInp.style.background = 'white';
+    qteInp.value = '1'; qteInp.max = '1';
+  }
+  updateTotal();
+}
+
+function verifierSerie(inp) {
+  var serie = inp.value.trim();
+  if (!serie || serie === 'N/A') { inp.classList.remove('serie-error'); return; }
+  var tr = inp.closest('tr');
+  tr.querySelector('.qte-inp').value = '1';
+  tr.querySelector('.qte-inp').max = '1';
+  inp.classList.toggle('serie-error', SERIES.indexOf(serie) !== -1);
+  if (SERIES.indexOf(serie) !== -1) inp.title = 'ATTENTION : numéro de série déjà enregistré !';
+  else inp.title = '';
+}
+
+function serieChange(inp) {
+  var serie = inp.value.trim();
+  if (serie && serie !== 'N/A' && SERIES.indexOf(serie) === -1) SERIES.push(serie);
+}
+
+function acInput(inp, type) {
+  var val = inp.value.trim().toLowerCase();
+  var list = inp.nextElementSibling;
+  var base = type === 'marque' ? allMarques : allModeles;
+  if (!val) { list.classList.remove('open'); return; }
+  var matches = base.filter(function(m){ return m.toLowerCase().includes(val); });
+  var html = matches.map(function(m){ return '<div class="ac-item" onclick="selectAC(this)" data-val="'+m+'">'+m+'</div>'; }).join('');
+  var exact = base.some(function(m){ return m.toLowerCase() === val; });
+  if (!exact) html += '<div class="ac-item new-item" onclick="createAC(this,\''+type+'\')">+ Créer "'+inp.value+'"</div>';
+  list.innerHTML = html;
+  list.classList.add('open');
+}
+
+function selectAC(el) { var inp = el.closest('.ac-wrap').querySelector('input'); inp.value = el.dataset.val; el.closest('.ac-list').classList.remove('open'); }
+function createAC(el, type) { var val = el.closest('.ac-wrap').querySelector('input').value; if(type==='marque') allMarques.push(val); else allModeles.push(val); selectAC(el); }
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.ac-wrap')) document.querySelectorAll('.ac-list').forEach(function(l){ l.classList.remove('open'); });
+});
+
+function renumeroter() {
+  document.querySelectorAll('#listing-tbody tr').forEach(function(tr,i){ tr.cells[0].textContent = i+1; });
+}
+
+function updateTotal() {
+  var total = 0;
+  document.querySelectorAll('.qte-inp').forEach(function(i){ total += parseInt(i.value)||0; });
+  document.getElementById('total-qte').textContent = total;
+}
+
+window.onload = function() {
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+  chargerBSD();
+};
+</script>
+</body>
+</html>

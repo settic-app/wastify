@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify by SetTIC</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1f3d52 0%, #29608A 100%); padding: 20px; }
+.card { background: white; border-radius: 16px; padding: 36px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.logo { text-align: center; margin-bottom: 24px; }
+.logo-sub { font-size: 12px; color: #888; margin-top: 6px; }
+label { display: block; font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; margin-bottom: 5px; margin-top: 14px; }
+input[type=text], input[type=password] { width: 100%; border: 1px solid #c8cfd8; border-radius: 7px; padding: 11px 13px; font-size: 14px; font-family: Arial, sans-serif; transition: border-color 0.15s; }
+input:focus { outline: none; border-color: #559FD7; box-shadow: 0 0 0 3px rgba(85,159,215,0.15); }
+#profil-box { background: #eaf5d5; border: 1px solid #8CC740; border-radius: 7px; padding: 9px 13px; margin-top: 8px; font-size: 13px; color: #3d7a14; font-weight: bold; display: none; }
+#err { background: #fdf0ef; border: 1px solid #e74c3c; border-radius: 7px; padding: 9px 13px; margin-top: 12px; font-size: 13px; color: #b03a2e; display: none; text-align: center; }
+button { width: 100%; margin-top: 18px; padding: 12px; border-radius: 7px; border: none; background: #29608A; color: white; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; cursor: pointer; transition: background 0.15s; }
+button:hover { background: #1f4d70; }
+.comptes { background: #f8f9fa; border: 1px solid #dde1e5; border-radius: 10px; padding: 14px; margin-bottom: 20px; }
+.comptes-title { font-weight: bold; color: #888; text-transform: uppercase; font-size: 11px; margin-bottom: 10px; letter-spacing: 0.5px; }
+.compte-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+.compte-row:last-child { border: none; }
+.compte-id { font-weight: bold; color: #29608A; font-size: 13px; }
+.rb { display: inline-block; border-radius: 20px; padding: 1px 8px; font-size: 10px; font-weight: bold; }
+.rb-manager    { background: #e8f0f7; color: #29608A; }
+.rb-ops        { background: #eaf5d5; color: #3d7a14; }
+.rb-reporting  { background: #fff3cd; color: #7a5c00; }
+.rb-collecte   { background: #fde8d8; color: #8b3a00; }
+.rb-client     { background: #f4f6f8; color: #888; }
+.rb-partenaire { background: #f0e6ff; color: #6c3483; }
+.mdp { text-align: center; margin-top: 10px; font-size: 11px; color: #888; }
+.footer { text-align: center; margin-top: 22px; font-size: 11px; color: #aaa; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <svg width="70" height="77" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold">
+        <tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan>
+      </text>
+    </svg>
+    <div class="logo-sub">Wastify &mdash; Tracabilite des dechets v1.0</div>
+  </div>
+
+  <div class="comptes">
+    <div class="comptes-title">Comptes de demonstration</div>
+    <div class="compte-row"><span class="compte-id">boussoura</span><span class="rb rb-manager">Manager</span></div>
+    <div class="compte-row"><span class="compte-id">julie</span><span class="rb rb-manager">Manager</span></div>
+    <div class="compte-row"><span class="compte-id">fama</span><span class="rb rb-ops">Chargee des ops</span></div>
+    <div class="compte-row"><span class="compte-id">aminata</span><span class="rb rb-ops">Chargee des ops</span></div>
+    <div class="compte-row"><span class="compte-id">woulare</span><span class="rb rb-reporting">Agent reporting</span></div>
+    <div class="compte-row"><span class="compte-id">tapha</span><span class="rb rb-collecte">Agent collecte</span></div>
+    <div class="compte-row"><span class="compte-id">sonatel</span><span class="rb rb-client">Client</span></div>
+    <div class="compte-row"><span class="compte-id">gmd</span><span class="rb rb-client">Client</span></div>
+    <div class="compte-row"><span class="compte-id">seneau</span><span class="rb rb-client">Client</span></div>
+    <div class="compte-row"><span class="compte-id">idex</span><span class="rb rb-partenaire">Partenaire</span></div>
+    <div class="compte-row"><span class="compte-id">fabrimetal</span><span class="rb rb-partenaire">Partenaire</span></div>
+    <div class="compte-row"><span class="compte-id">exporteurope</span><span class="rb rb-partenaire">Partenaire</span></div>
+    <div class="mdp">Mot de passe : <strong>settic2026</strong></div>
+  </div>
+
+  <label for="id">Identifiant</label>
+  <input type="text" id="id" placeholder="Votre identifiant...">
+  <div id="profil-box"></div>
+
+  <label for="pwd">Mot de passe</label>
+  <input type="password" id="pwd" placeholder="settic2026">
+  <div id="err"></div>
+
+  <button id="btnlogin">Se connecter</button>
+
+  <div class="footer">Wastify by SetTIC SARL &mdash; Pionnier du recyclage des DEEE au Senegal</div>
+</div>
+
+<script>
+var USERS = {
+  boussoura:    { nom:'Boussoura TALLA',  role:'manager',          dest:'dashboard_ops.html' },
+  julie:        { nom:'Julie',             role:'manager',          dest:'dashboard_ops.html' },
+  fama:         { nom:'Fama',              role:'ops',              dest:'dashboard_ops.html' },
+  aminata:      { nom:'Aminata',           role:'ops',              dest:'dashboard_ops.html' },
+  woulare:      { nom:'Ibrahima WOULARE', role:'agent_reporting',  dest:'dashboard_agent.html' },
+  tapha:        { nom:'Tapha',             role:'agent_collecte',   dest:'dashboard_agent.html' },
+  sonatel:      { nom:'Sonatel',           role:'client',           dest:'portail_client.html' },
+  gmd:          { nom:'GMD',               role:'client',           dest:'portail_client.html' },
+  seneau:       { nom:'SENEAU',            role:'client',           dest:'portail_client.html' },
+  idex:         { nom:'IDEX SA',           role:'partenaire',       dest:'portail_client.html' },
+  fabrimetal:   { nom:'Fabrimetal',        role:'partenaire',       dest:'portail_client.html' },
+  exporteurope: { nom:'Export Europe',     role:'partenaire',       dest:'portail_client.html' }
+};
+
+var LABELS = {
+  manager:         'Manager',
+  ops:             'Chargee des ops',
+  agent_reporting: 'Agent reporting',
+  agent_collecte:  'Agent collecte',
+  client:          'Client',
+  partenaire:      'Partenaire Downstream'
+};
+
+document.getElementById('id').addEventListener('input', function() {
+  var u = USERS[this.value.trim().toLowerCase()];
+  var b = document.getElementById('profil-box');
+  if (u) { b.textContent = u.nom + ' — ' + LABELS[u.role]; b.style.display = 'block'; }
+  else { b.style.display = 'none'; }
+});
+
+document.getElementById('id').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('pwd').focus();
+});
+
+document.getElementById('pwd').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('btnlogin').click();
+});
+
+document.getElementById('btnlogin').addEventListener('click', function() {
+  var id  = document.getElementById('id').value.trim().toLowerCase();
+  var pwd = document.getElementById('pwd').value.trim();
+  var err = document.getElementById('err');
+  err.style.display = 'none';
+  if (!id || !pwd) { err.textContent = 'Identifiant et mot de passe requis.'; err.style.display = 'block'; return; }
+  var u = USERS[id];
+  if (!u) { err.textContent = 'Identifiant inconnu : ' + id; err.style.display = 'block'; return; }
+  if (pwd !== 'settic2026') { err.textContent = 'Mot de passe incorrect.'; err.style.display = 'block'; document.getElementById('pwd').value = ''; return; }
+  localStorage.setItem('wastify_user', u.nom);
+  localStorage.setItem('wastify_role', u.role);
+  localStorage.setItem('wastify_id', id);
+  window.location.href = u.dest;
+});
+</script>
+</body>
+</html>

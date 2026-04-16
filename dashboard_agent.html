@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Dashboard Agent</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; cursor: pointer; }
+.layout { display: flex; min-height: calc(100vh - 58px); }
+.sidebar { width: 220px; background: #1f3d52; flex-shrink: 0; padding: 16px 0; position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; }
+.nav-section { font-size: 10px; font-weight: bold; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; padding: 16px 20px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.75); font-size: 13px; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+.nav-item.active { background: rgba(140,199,64,0.2); color: #8CC740; border-left: 3px solid #8CC740; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item.hidden { display: none; }
+.main { flex: 1; padding: 20px 24px; }
+/* PROFIL BANNER */
+.profil-banner { border-radius: 10px; padding: 4px 14px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 16px; }
+.pb-reporting { background: #fff3cd; color: #7a5c00; border: 1px solid #f0c040; }
+.pb-collecte { background: #fde8d8; color: #8b3a00; border: 1px solid #e67e22; }
+/* WELCOME */
+.welcome { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+.w-avatar { width: 48px; height: 48px; border-radius: 50%; background: #29608A; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; flex-shrink: 0; }
+.w-title { font-size: 18px; font-weight: bold; color: #29608A; }
+.w-sub { font-size: 13px; color: #888; margin-top: 2px; }
+/* MÉTRIQUES */
+.metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
+.mc { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 16px 18px; position: relative; overflow: hidden; }
+.mc::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; }
+.mc-blue::before { background:#559FD7; }
+.mc-green::before { background:#8CC740; }
+.mc-orange::before { background:#e67e22; }
+.mc-label { font-size:11px; color:#888; text-transform:uppercase; margin-bottom:4px; }
+.mc-value { font-size:24px; font-weight:bold; color:#29608A; }
+/* ACTIONS */
+.actions-grid { display: grid; gap: 14px; margin-bottom: 20px; }
+.ag-4 { grid-template-columns: repeat(4,1fr); }
+.ag-2 { grid-template-columns: repeat(2,1fr); }
+.action-card { background: white; border-radius: 12px; border: 2px solid #dde1e5; padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.action-card:hover { border-color: #559FD7; background: #f0f7fd; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.action-icon { font-size: 32px; }
+.action-title { font-size: 14px; font-weight: bold; color: #29608A; }
+.action-sub { font-size: 11px; color: #888; }
+/* CARDS */
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; margin-bottom: 16px; }
+.card-head { padding: 12px 18px; border-bottom: 1px solid #dde1e5; display: flex; align-items: center; justify-content: space-between; }
+.card-head-title { font-size: 14px; font-weight: bold; color: #29608A; }
+.card-head-action { font-size: 12px; color: #559FD7; cursor: pointer; font-weight: bold; text-decoration: none; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; }
+td { padding: 9px 12px; border-bottom: 1px solid #f4f6f8; }
+tr:hover td { background: #f8fafb; }
+.badge { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: bold; }
+.b-brouillon { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.b-prev { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.b-valide { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+/* PLANNING */
+.plan-item { padding: 12px 18px; border-bottom: 1px solid #f4f6f8; display: flex; align-items: center; gap: 12px; }
+.plan-item:last-child { border-bottom: none; }
+.plan-color { width: 4px; border-radius: 4px; align-self: stretch; flex-shrink: 0; }
+.plan-time { font-size: 12px; font-weight: bold; color: #29608A; white-space: nowrap; min-width: 60px; }
+.plan-title { font-size: 13px; font-weight: bold; color: #404041; }
+.plan-sub { font-size: 12px; color: #888; }
+.plan-btn { font-size: 11px; border-radius: 20px; padding: 3px 10px; font-weight: bold; margin-left: auto; white-space: nowrap; text-decoration: none; background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+@media (max-width:800px) { .sidebar{display:none;} .metrics{grid-template-columns:1fr 1fr;} .ag-4{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill" id="user-pill" onclick="deconnexion()">Agent &#8599;</div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR — contenu adapté selon le profil -->
+  <div class="sidebar" id="sidebar">
+    <div class="nav-section">Mon espace</div>
+    <a href="dashboard_agent.html" class="nav-item active"><span class="nav-icon">&#9632;</span> Tableau de bord</a>
+    <a href="planning.html" class="nav-item"><span class="nav-icon">&#128197;</span> Mon planning</a>
+
+    <div class="nav-section">Saisie</div>
+    <a href="bsd.html" class="nav-item"><span class="nav-icon">&#128196;</span> Nouveau BSD</a>
+    <a href="bld.html" class="nav-item"><span class="nav-icon">&#128666;</span> Nouveau BLD</a>
+    <!-- Agent reporting uniquement -->
+    <a href="decomposition.html" class="nav-item nav-reporting"><span class="nav-icon">&#9881;</span> D&eacute;composition</a>
+    <a href="rapport_listing.html" class="nav-item nav-reporting"><span class="nav-icon">&#128203;</span> Listing &eacute;quipements</a>
+
+    <div class="nav-section">Historique</div>
+    <a href="#" class="nav-item"><span class="nav-icon">&#128196;</span> Mes BSD</a>
+    <a href="#" class="nav-item nav-reporting"><span class="nav-icon">&#128203;</span> Mes listings</a>
+
+    <div class="nav-section" style="margin-top:16px;"></div>
+    <a href="index.html" class="nav-item" onclick="deconnexion(event)" style="color:rgba(255,255,255,0.4);font-size:12px;"><span class="nav-icon">&#128682;</span> D&eacute;connexion</a>
+  </div>
+
+  <div class="main">
+
+    <div id="profil-banner-wrap"></div>
+
+    <!-- WELCOME -->
+    <div class="welcome">
+      <div class="w-avatar" id="w-avatar">IW</div>
+      <div style="flex:1;">
+        <div class="w-title" id="w-title">Bonjour !</div>
+        <div class="w-sub" id="w-sub">Aujourd'hui : <span id="today-date"></span></div>
+      </div>
+      <a href="bsd.html" style="background:#29608A;color:white;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:bold;text-decoration:none;">+ Nouveau BSD</a>
+    </div>
+
+    <!-- MÉTRIQUES -->
+    <div class="metrics">
+      <div class="mc mc-blue"><div class="mc-label">Mes BSD ce mois</div><div class="mc-value" id="m-bsd">8</div></div>
+      <div class="mc mc-green"><div class="mc-label">Tonnage collect&eacute;</div><div class="mc-value">1,2<span style="font-size:14px;color:#888;"> t</span></div></div>
+      <div class="mc mc-orange"><div class="mc-label">En attente</div><div class="mc-value" id="m-attente">2</div></div>
+    </div>
+
+    <!-- ACTIONS RAPIDES — adaptées selon profil -->
+    <div id="actions-container" class="actions-grid ag-4" style="margin-bottom:20px;"></div>
+
+    <!-- PLANNING DU JOUR -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">&#128197; Planning du jour</div>
+        <a href="planning.html" class="card-head-action">Voir tout &#8594;</a>
+      </div>
+      <div class="plan-item">
+        <div class="plan-color" style="background:#8CC740;"></div>
+        <div class="plan-time">08:00<br>11:00</div>
+        <div style="flex:1;">
+          <div class="plan-title">Collecte DEEE — Sonatel</div>
+          <div class="plan-sub">Plateau &mdash; Contact : Moussa NDIAYE &mdash; 77 200 00 01</div>
+        </div>
+        <a href="bsd.html" class="plan-btn">+ BSD</a>
+      </div>
+      <div class="plan-item">
+        <div class="plan-color" style="background:#f0c040;"></div>
+        <div class="plan-time">14:00<br>15:00</div>
+        <div style="flex:1;">
+          <div class="plan-title">R&eacute;union &eacute;quipe</div>
+          <div class="plan-sub">Entrep&ocirc;t Diamniadio</div>
+        </div>
+        <span style="font-size:11px;border-radius:20px;padding:3px 10px;font-weight:bold;margin-left:auto;background:#fff3cd;color:#7a5c00;border:1px solid #f0c040;">T&acirc;che</span>
+      </div>
+    </div>
+
+    <!-- MES DERNIERS BSD -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">&#128196; Mes derniers BSD</div>
+        <a href="#" class="card-head-action">Voir tout</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>R&eacute;f&eacute;rence</th><th>Lot BSD</th><th>Client</th><th>Date</th><th>Poids</th><th>Statut</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/05000</td>
+              <td style="font-size:11px;color:#888;">N°/09/04/2026/BSD/05000</td>
+              <td>Sonatel</td><td>09/04/2026</td><td>195 kg</td>
+              <td><span class="badge b-prev">Pr&eacute;-valid&eacute;</span></td>
+            </tr>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/04999</td>
+              <td style="font-size:11px;color:#888;">N°/07/04/2026/BSD/04999</td>
+              <td>Orange S&eacute;n&eacute;gal</td><td>07/04/2026</td><td>88 kg</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+            </tr>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/04998</td>
+              <td style="font-size:11px;color:#888;">N°/03/04/2026/BSD/04998</td>
+              <td>EGMT</td><td>03/04/2026</td><td>55 kg</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var ACTIONS = {
+  agent_collecte: [
+    { icon:'&#128196;', title:'Nouveau BSD', sub:'Saisir une collecte', href:'bsd.html' },
+    { icon:'&#128666;', title:'Nouveau BLD', sub:'Saisir une livraison', href:'bld.html' },
+    { icon:'&#128197;', title:'Mon Planning', sub:'Voir mes missions', href:'planning.html' },
+    { icon:'&#128203;', title:'Mes BSD', sub:'Historique collectes', href:'#' },
+  ],
+  agent_reporting: [
+    { icon:'&#128196;', title:'Nouveau BSD', sub:'Saisir une collecte', href:'bsd.html' },
+    { icon:'&#128666;', title:'Nouveau BLD', sub:'Saisir une livraison', href:'bld.html' },
+    { icon:'&#9881;',   title:'D&eacute;composition', sub:'Rapport de tri', href:'decomposition.html' },
+    { icon:'&#128203;', title:'Listing', sub:'D&eacute;tail &eacute;quipements', href:'rapport_listing.html' },
+    { icon:'&#128197;', title:'Planning', sub:'Mes missions', href:'planning.html' },
+    { icon:'&#128196;', title:'Mes BSD', sub:'Historique', href:'#' },
+  ]
+};
+
+var PROFIL_LABELS = {
+  agent_collecte:  { label:'Agent Collecte', css:'pb-collecte', cols:'ag-4' },
+  agent_reporting: { label:'Agent Reporting', css:'pb-reporting', cols:'ag-4' }
+};
+
+function deconnexion(e) {
+  if (e) e.preventDefault();
+  localStorage.clear();
+  window.location.href = 'index.html';
+}
+
+window.onload = function() {
+  var user = localStorage.getItem('wastify_user') || 'Agent';
+  var role = localStorage.getItem('wastify_role') || 'agent_collecte';
+
+  // Sécurité — seuls les agents accèdent à cette page
+  if (role !== 'agent_collecte' && role !== 'agent_reporting') {
+    window.location.href = 'dashboard_ops.html'; return;
+  }
+
+  // User pill
+  document.getElementById('user-pill').textContent = user.split(' ')[0] + ' ↗';
+
+  // Welcome
+  var init = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  document.getElementById('w-avatar').textContent = init;
+  document.getElementById('w-title').textContent = 'Bonjour ' + user.split(' ')[0] + ' !';
+
+  // Date
+  var now = new Date();
+  var jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  document.getElementById('today-date').textContent = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()] + ' ' + now.getFullYear();
+
+  // Profil banner
+  var pl = PROFIL_LABELS[role] || PROFIL_LABELS['agent_collecte'];
+  document.getElementById('profil-banner-wrap').innerHTML =
+    '<span class="profil-banner ' + pl.css + '">&#128100; ' + pl.label + '</span>';
+
+  // Masquer items sidebar selon profil
+  if (role === 'agent_collecte') {
+    document.querySelectorAll('.nav-reporting').forEach(function(el){ el.style.display = 'none'; });
+  }
+
+  // Actions rapides
+  var actions = ACTIONS[role] || ACTIONS['agent_collecte'];
+  var cols = actions.length <= 4 ? 'ag-4' : 'ag-4';
+  var container = document.getElementById('actions-container');
+  container.innerHTML = actions.map(function(a) {
+    return '<a href="'+a.href+'" class="action-card">'+
+      '<div class="action-icon">'+a.icon+'</div>'+
+      '<div class="action-title">'+a.title+'</div>'+
+      '<div class="action-sub">'+a.sub+'</div>'+
+      '</a>';
+  }).join('');
+};
+</script>
+</body>
+</html>

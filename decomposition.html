@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Decomposition</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+
+.docbar { background: white; border-bottom: 1px solid #dde1e5; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.doc-main { font-size: 18px; font-weight: bold; color: #29608A; }
+.doc-num { font-size: 18px; font-weight: bold; color: #559FD7; }
+.doc-brouillon { background: #f4f6f8; border: 1px solid #dde1e5; border-radius: 20px; padding: 3px 12px; font-size: 12px; color: #888; font-style: italic; }
+.doc-valide { background: #eaf5d5; border: 1px solid #8CC740; border-radius: 20px; padding: 3px 12px; font-size: 12px; color: #3d7a14; font-weight: bold; display: none; }
+.steps { display: flex; }
+.step { padding: 6px 18px; font-size: 13px; border: 1px solid #dde1e5; background: #f4f6f8; color: #888; }
+.step:first-child { border-radius: 6px 0 0 6px; }
+.step:last-child { border-radius: 0 6px 6px 0; }
+.step.active { background: #29608A; color: white; border-color: #29608A; font-weight: bold; }
+.step.done { background: #8CC740; color: white; border-color: #8CC740; }
+
+.actbar { background: white; border-bottom: 1px solid #dde1e5; padding: 8px 24px; display: flex; gap: 8px; align-items: center; position: sticky; top: 115px; z-index: 98; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn-save { background: #29608A; color: white; border-color: #29608A; }
+.btn-validate { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-cancel { background: white; color: #b03a2e; border-color: #b03a2e; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.sep { width: 1px; height: 22px; background: #dde1e5; margin: 0 4px; }
+
+.body { padding: 20px 24px; max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 11px 18px; display: flex; align-items: center; gap: 10px; }
+.card-head-blue { background: #29608A; }
+.card-head-green { background: #3d7a14; }
+.card-head-mid { background: #1a5276; }
+.card-head-gray { background: #555; }
+.card-head-title { font-size: 14px; font-weight: bold; color: white; }
+.dot-g { width: 9px; height: 9px; border-radius: 50%; background: #8CC740; flex-shrink: 0; }
+.dot-b { width: 9px; height: 9px; border-radius: 50%; background: #559FD7; flex-shrink: 0; }
+.dot-w { width: 9px; height: 9px; border-radius: 50%; background: white; opacity: 0.7; flex-shrink: 0; }
+.card-head-right { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.card-body { padding: 18px; }
+
+.g1 { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input, .field select { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 14px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus { outline: none; border-color: #559FD7; box-shadow: 0 0 0 2px rgba(85,159,215,0.15); }
+.field input[readonly] { background: #f4f6f8; color: #888; cursor: default; }
+
+.sub-title { font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; margin: 18px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #8CC740; }
+
+/* SUIVI ÉTAT BSD */
+.bsd-etat-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 4px; }
+.bsd-etat-table th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; }
+.bsd-etat-table td { padding: 9px 12px; border-bottom: 1px solid #f4f6f8; }
+.bsd-etat-table tr:last-child td { border-bottom: none; }
+.prog-bar { height: 8px; background: #f4f6f8; border-radius: 4px; overflow: hidden; min-width: 80px; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.badge-reste { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: bold; }
+.badge-complet { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.badge-partiel { background: #fff3cd; color: #7a5c00; border: 1px solid #f0c040; }
+.badge-vide { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+
+/* SÉLECTION ÉQUIPEMENTS */
+.equip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.equip-card { border: 1px solid #c8cfd8; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; user-select: none; position: relative; }
+.equip-card:hover { border-color: #559FD7; background: #f0f7fd; }
+.equip-card.selected { border-color: #29608A; background: #e8f0f7; }
+.equip-card.complet { border-color: #8CC740; background: #f0f7ec; cursor: not-allowed; opacity: 0.7; }
+.equip-card.complet:hover { background: #f0f7ec; border-color: #8CC740; }
+.equip-name { font-size: 13px; font-weight: bold; color: #404041; margin-bottom: 4px; }
+.equip-card.selected .equip-name { color: #29608A; }
+.equip-info { font-size: 11px; color: #888; }
+.equip-reste { font-size: 11px; font-weight: bold; }
+.equip-reste.ok { color: #3d7a14; }
+.equip-reste.warn { color: #7a5c00; }
+.equip-reste.zero { color: #8CC740; }
+.equip-check { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%; background: #29608A; color: white; display: none; align-items: center; justify-content: center; font-size: 11px; }
+.equip-card.selected .equip-check { display: flex; }
+
+/* SAISIE QUANTITÉ/POIDS ÉQUIPEMENT SÉLECTIONNÉ */
+.equip-saisie { background: #e8f0f7; border: 1px solid #559FD7; border-radius: 8px; padding: 14px; margin-bottom: 16px; display: none; }
+.equip-saisie.visible { display: block; }
+.equip-saisie-title { font-size: 13px; font-weight: bold; color: #29608A; margin-bottom: 12px; }
+
+/* MÉTRIQUES */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.metric-card { background: #f4f6f8; border-radius: 8px; padding: 12px 16px; border: 1px solid #dde1e5; }
+.metric-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+.metric-value { font-size: 20px; font-weight: bold; color: #29608A; }
+.metric-unit { font-size: 12px; color: #888; font-weight: normal; }
+.metric-card.green { border-left: 3px solid #8CC740; }
+.metric-card.blue { border-left: 3px solid #559FD7; }
+.metric-card.orange { border-left: 3px solid #e67e22; }
+.metric-card.red { border-left: 3px solid #e74c3c; }
+
+/* ALERTE */
+.alert-box { border-radius: 8px; padding: 10px 14px; font-size: 13px; display: none; align-items: center; gap: 10px; margin-bottom: 14px; }
+.alert-box.visible { display: flex; }
+.alert-warn { background: #fff3cd; border: 1px solid #f0c040; color: #7a5c00; }
+.alert-ok { background: #d4edda; border: 1px solid #8CC740; color: #155724; }
+.alert-error { background: #fdf0ef; border: 1px solid #e74c3c; color: #b03a2e; }
+
+/* TABLE MATIÈRES */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: #f4f6f8; }
+th { padding: 9px 10px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; white-space: nowrap; text-transform: uppercase; }
+td { padding: 7px 8px; border-bottom: 1px solid #dde1e5; vertical-align: middle; }
+td select, td input[type="text"], td input[type="number"] { border: 1px solid #c8cfd8; border-radius: 4px; padding: 5px 7px; font-size: 13px; background: white; color: #404041; width: 100%; font-family: Arial, sans-serif; }
+.add-line-btn { display: inline-flex; align-items: center; gap: 6px; color: #559FD7; font-size: 13px; cursor: pointer; padding: 10px 0; background: none; border: none; font-family: Arial, sans-serif; }
+.add-line-btn:hover { text-decoration: underline; }
+.plus-c { width: 18px; height: 18px; border-radius: 50%; background: #559FD7; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; flex-shrink: 0; }
+.poids-total { text-align: right; font-size: 14px; color: #888; padding: 10px 0; }
+.poids-total strong { color: #29608A; font-size: 16px; }
+
+/* JOURNAL */
+.journal-section { padding: 18px; }
+.journal-entry { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+.journal-avatar { width: 32px; height: 32px; border-radius: 50%; background: #29608A; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.journal-avatar.system { background: #888; }
+.journal-bubble { flex: 1; }
+.journal-meta { font-size: 11px; color: #888; margin-bottom: 4px; }
+.journal-meta strong { color: #404041; }
+.journal-text { font-size: 13px; color: #404041; line-height: 1.5; background: #f4f6f8; border-radius: 6px; padding: 8px 12px; border-left: 3px solid #dde1e5; }
+.journal-text.system { border-left-color: #559FD7; color: #888; font-style: italic; }
+.journal-text.action { border-left-color: #8CC740; }
+.jtype-btn { padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #888; font-family: Arial, sans-serif; }
+.jtype-btn.active { background: #29608A; color: white; border-color: #29608A; }
+.journal-input-area { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; border-top: 1px solid #dde1e5; padding-top: 16px; }
+.journal-input-wrap { flex: 1; }
+.journal-type-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+.journal-input-wrap textarea { width: 100%; border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 13px; font-family: Arial, sans-serif; background: white; color: #404041; min-height: 60px; resize: vertical; }
+.journal-send { display: flex; justify-content: flex-end; margin-top: 6px; }
+
+/* PROGRESS BAR BILAN */
+.bilan-bar-wrap { margin-bottom: 14px; }
+.bilan-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 5px; }
+.bilan-bar-track { height: 12px; background: #dde1e5; border-radius: 6px; overflow: hidden; }
+.bilan-bar-fill { height: 100%; background: #8CC740; border-radius: 6px; transition: width 0.4s; }
+.bilan-bar-fill.warn { background: #e67e22; }
+.bilan-bar-fill.error { background: #e74c3c; }
+
+@media (max-width: 650px) {
+  .g2, .g3 { grid-template-columns: 1fr; }
+  .equip-grid { grid-template-columns: 1fr 1fr; }
+  .metrics-row { grid-template-columns: 1fr 1fr; }
+  .steps { display: none; }
+}
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="bsd.html" class="nav-link">&#8592; BSD</a>
+    <a href="bld.html" class="nav-link">BLD</a>
+    <a href="dashboard_ops.html" class="nav-link">Dashboard</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+
+<div class="docbar">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:2px;">Rapport de D&eacute;composition</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="doc-main">D&Eacute;COMP</span>
+        <span class="doc-num" id="doc-num" style="display:none"></span>
+        <span class="doc-brouillon" id="badge-brouillon">brouillon</span>
+        <span class="doc-valide" id="badge-valide">&#10003; confirm&eacute;</span>
+      </div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step active" id="s-brouillon">Brouillon</div>
+    <div class="step" id="s-confirme">Confirm&eacute;</div>
+    <div class="step" id="s-fait">Fait</div>
+  </div>
+</div>
+
+<div class="actbar">
+  <button class="btn btn-save" onclick="sauvegarder()">Sauvegarder</button>
+  <button class="btn btn-cancel" onclick="annuler()">Annuler</button>
+  <div class="sep"></div>
+  <button class="btn btn-validate" id="btn-confirmer" onclick="confirmer()">Confirmer</button>
+  <button class="btn" id="btn-fait" onclick="marquerFait()" disabled style="color:#1a5276;border-color:#1a5276;">Marquer Fait</button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-generer-bld" onclick="genererBLD()" disabled style="color:#3d7a14;border-color:#8CC740;">G&eacute;n&eacute;rer BLD</button>
+</div>
+
+<div class="body">
+
+  <!-- ÉTAPE 1 : SÉLECTION BSD -->
+  <div class="card">
+    <div class="card-head card-head-blue">
+      <div class="dot-g"></div>
+      <span class="card-head-title">&#160;Etape 1 — S&eacute;lection du BSD</span>
+    </div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field">
+          <label>BSD associ&eacute; *</label>
+          <select id="bsd-select" onchange="chargerBSD()">
+            <option value="">— S&eacute;lectionner un BSD valid&eacute; —</option>
+            <option value="b05000">DIA/BSD/2026/05000 — Orange Sénégal (27/03/2026)</option>
+            <option value="b04999">DIA/BSD/2026/04999 — Transport I. Sakho (26/03/2026)</option>
+            <option value="b04997">DIA/BSD/2026/04997 — Sonatel (24/03/2026)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Num&eacute;ro de lot BSD</label>
+          <input readonly id="num-lot-bsd" placeholder="Auto-rempli">
+        </div>
+        <div class="field">
+          <label>Responsable</label>
+          <select id="responsable">
+            <option>Boussoura TALLA</option>
+            <option>Fama</option>
+            <option>Aminata</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>Date de d&eacute;composition</label>
+          <input type="date" id="date-decompo">
+        </div>
+        <div class="field">
+          <label>Poids total BSD</label>
+          <input readonly id="poids-bsd" placeholder="—">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉTAT DU BSD -->
+  <div class="card" id="card-etat" style="display:none;">
+    <div class="card-head card-head-mid">
+      <div class="dot-b"></div>
+      <span class="card-head-title">&#160;Etat de d&eacute;composition du BSD</span>
+      <div class="card-head-right">
+        <span style="font-size:12px;color:rgba(255,255,255,0.8);" id="etat-resume">0 / 0 kg d&eacute;compos&eacute;s</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table class="bsd-etat-table">
+        <thead>
+          <tr>
+            <th>Equipement</th>
+            <th>Total BSD</th>
+            <th>D&eacute;compos&eacute;</th>
+            <th>Restant</th>
+            <th>Progression</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody id="etat-tbody"></tbody>
+        <tfoot>
+          <tr style="background:#f4f6f8;font-weight:bold;">
+            <td style="padding:9px 12px;">TOTAL</td>
+            <td style="padding:9px 12px;" id="etat-total-bsd">—</td>
+            <td style="padding:9px 12px;" id="etat-total-decomp">0 kg</td>
+            <td style="padding:9px 12px;" id="etat-total-reste">—</td>
+            <td style="padding:9px 12px;" colspan="2">
+              <div class="bilan-bar-wrap" style="margin:0;">
+                <div class="bilan-bar-track">
+                  <div class="bilan-bar-fill" id="bilan-bar" style="width:0%"></div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 2 : SÉLECTION ÉQUIPEMENTS À DÉCOMPOSER -->
+  <div class="card" id="card-selection" style="display:none;">
+    <div class="card-head card-head-green">
+      <div class="dot-b"></div>
+      <span class="card-head-title">&#160;Etape 2 — Equipements &agrave; d&eacute;composer cette session</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:#888;margin-bottom:14px;">S&eacute;lectionnez l&apos;&eacute;quipement que vous souhaitez d&eacute;composer. Les &eacute;quipements d&eacute;j&agrave; trait&eacute;s sont gris&eacute;s.</p>
+
+      <div class="equip-grid" id="equip-grid"></div>
+
+      <!-- SAISIE QUANTITÉ/POIDS POUR L'ÉQUIPEMENT SÉLECTIONNÉ -->
+      <div class="equip-saisie" id="equip-saisie">
+        <div class="equip-saisie-title" id="equip-saisie-title">Ordinateurs — Saisir la quantit&eacute; &agrave; d&eacute;composer</div>
+        <div class="g3">
+          <div class="field">
+            <label>Quantit&eacute; &agrave; d&eacute;composer *</label>
+            <input type="number" id="equip-qte" min="1" placeholder="0" onchange="verifierQte()">
+            <span style="font-size:11px;color:#888;margin-top:3px;" id="equip-qte-max"></span>
+          </div>
+          <div class="field">
+            <label>Poids total &agrave; d&eacute;composer (kg) *</label>
+            <input type="number" id="equip-poids" step="0.01" min="0.01" placeholder="0,00" onchange="updateMetrics()">
+            <span style="font-size:11px;color:#888;margin-top:3px;" id="equip-poids-info"></span>
+          </div>
+          <div class="field">
+            <label>Num&eacute;ro de lot d&eacute;composition</label>
+            <input readonly id="equip-lot" placeholder="Auto-g&eacute;n&eacute;r&eacute;">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ÉTAPE 3 : MATIÈRES ISSUES DU TRI -->
+  <div class="card" id="card-matieres" style="display:none;">
+    <div class="card-head card-head-blue">
+      <div class="dot-g"></div>
+      <span class="card-head-title" id="matieres-title">&#160;Etape 3 — Mati&egrave;res issues du tri</span>
+      <div class="card-head-right">
+        <span style="font-size:12px;color:rgba(255,255,255,0.8);" id="matieres-equip-info"></span>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- MÉTRIQUES -->
+      <div class="metrics-row">
+        <div class="metric-card blue">
+          <div class="metric-label">Poids &agrave; d&eacute;composer</div>
+          <div class="metric-value" id="m-entree">0,00 <span class="metric-unit">kg</span></div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Total mati&egrave;res</div>
+          <div class="metric-value" id="m-sortie">0,00 <span class="metric-unit">kg</span></div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-label">Ecart</div>
+          <div class="metric-value" id="m-ecart">0,00 <span class="metric-unit">kg</span></div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Taux valorisation</div>
+          <div class="metric-value" id="m-taux">0 <span class="metric-unit">%</span></div>
+        </div>
+      </div>
+
+      <!-- ALERTE ÉQUILIBRE -->
+      <div class="alert-box alert-warn" id="alert-desequilibre">
+        <span style="font-size:18px;">&#9888;</span>
+        <span id="alert-desequilibre-text">La somme des mati&egrave;res ne correspond pas au poids d&eacute;compos&eacute;.</span>
+      </div>
+      <div class="alert-box alert-ok" id="alert-equilibre">
+        <span style="font-size:18px;">&#10003;</span>
+        <span>Bilan &eacute;quilibr&eacute; — les poids sont coh&eacute;rents.</span>
+      </div>
+
+      <!-- TABLE MATIÈRES -->
+      <table>
+        <thead>
+          <tr>
+            <th style="width:28%">Mati&egrave;re / Sous-produit</th>
+            <th style="width:16%">Cat&eacute;gorie</th>
+            <th style="width:14%">Poids (kg)</th>
+            <th style="width:10%">Unit&eacute;</th>
+            <th style="width:18%">Destination</th>
+            <th style="width:10%">Valorisable</th>
+            <th style="width:4%"></th>
+          </tr>
+        </thead>
+        <tbody id="matieres-tbody"></tbody>
+      </table>
+      <button class="add-line-btn" onclick="ajouterMatiere()">
+        <span class="plus-c">+</span> Ajouter une mati&egrave;re
+      </button>
+      <div class="poids-total">Total mati&egrave;res : <strong id="total-matieres">0,00 kg</strong></div>
+
+      <!-- RÉSIDUS -->
+      <div class="sub-title">R&eacute;sidus non valorisables</div>
+      <div class="g2">
+        <div class="field">
+          <label>Poids r&eacute;sidus (kg)</label>
+          <input type="number" id="poids-residus" step="0.01" min="0" placeholder="0,00" onchange="updateMetrics()">
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <input type="text" placeholder="Ex: poussi&egrave;re, huiles...">
+        </div>
+      </div>
+
+      <!-- BOUTON VALIDER CETTE SESSION -->
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <button class="btn btn-validate" onclick="validerSession()">&#10003; Valider cette d&eacute;composition</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JOURNAL INTERNE -->
+  <div class="card">
+    <div class="card-head card-head-gray">
+      <div class="dot-w"></div>
+      <span class="card-head-title">Journal interne</span>
+      <div class="card-head-right">
+        <span style="font-size:11px;color:rgba(255,255,255,0.7);">Non imprim&eacute; &mdash; Confidentiel</span>
+      </div>
+    </div>
+    <div class="journal-section">
+      <div id="journal-entries">
+        <div class="journal-entry">
+          <div class="journal-avatar system">&#9881;</div>
+          <div class="journal-bubble">
+            <div class="journal-meta"><strong>Syst&egrave;me</strong> &mdash; <span id="creation-date"></span></div>
+            <div class="journal-text system">Rapport de d&eacute;composition cr&eacute;&eacute;</div>
+          </div>
+        </div>
+      </div>
+      <div class="journal-input-area">
+        <div class="journal-avatar" id="journal-avatar">BT</div>
+        <div class="journal-input-wrap">
+          <div class="journal-type-btns">
+            <button class="jtype-btn active" onclick="setJType('note',this)">Note interne</button>
+            <button class="jtype-btn" onclick="setJType('message',this)">Message</button>
+          </div>
+          <textarea id="journal-input" placeholder="Ajouter une note..."></textarea>
+          <div class="journal-send">
+            <button class="btn btn-save" style="font-size:13px;" onclick="envoyerJournal()">Envoyer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DONNÉES BSD FICTIVES
+// ============================================================
+var BSD_DATA = {
+  b05000: {
+    ref: 'DIA/BSD/2026/05000',
+    client: 'Orange Sénégal',
+    lot: 'N\u00b0/27/03/2026/BSD/05000',
+    date: '27/03/2026',
+    poidsTotal: 195.0,
+    equipements: [
+      { id:'e1', nom:'Ordinateurs', qte: 10, poids: 120.0, decompose: 0, poidsDecompose: 0 },
+      { id:'e2', nom:'Imprimantes', qte: 5,  poids: 45.0,  decompose: 0, poidsDecompose: 0 },
+      { id:'e3', nom:'T\u00e9l\u00e9phones', qte: 20, poids: 30.0, decompose: 0, poidsDecompose: 0 }
+    ]
+  },
+  b04999: {
+    ref: 'DIA/BSD/2026/04999',
+    client: 'Transport I. Sakho',
+    lot: 'N\u00b0/26/03/2026/BSD/04999',
+    date: '26/03/2026',
+    poidsTotal: 120.0,
+    equipements: [
+      { id:'e1', nom:'D\u00e9chets m\u00e9nagers mixtes', qte: 1, poids: 120.0, decompose: 0, poidsDecompose: 0 }
+    ]
+  },
+  b04997: {
+    ref: 'DIA/BSD/2026/04997',
+    client: 'Sonatel',
+    lot: 'N\u00b0/24/03/2026/BSD/04997',
+    date: '24/03/2026',
+    poidsTotal: 210.0,
+    equipements: [
+      { id:'e1', nom:'Unit\u00e9s centrales', qte: 15, poids: 120.0, decompose: 0, poidsDecompose: 0 },
+      { id:'e2', nom:'Ecrans', qte: 10,  poids: 60.0,  decompose: 0, poidsDecompose: 0 },
+      { id:'e3', nom:'Claviers/Souris', qte: 20, poids: 30.0, decompose: 0, poidsDecompose: 0 }
+    ]
+  }
+};
+
+var matieresList = ['Papier / Carton','Plastique','M\u00e9taux ferreux','M\u00e9taux non-ferreux','Cuivre','Aluminium','Verre','Huiles','C\u00e2bles \u00e9lectriques','Circuits imprim\u00e9s','Batteries','Plastique dur'];
+var categories = ['M\u00e9taux','Plastiques','Papier/Carton','Verre','Electronique','Organique','R\u00e9sidus'];
+var destinations = ['DIA/Stock','Recyclage partenaire','BLD \u00e0 cr\u00e9er','Mise en d\u00e9charge'];
+var unites = ['kg','tonne','unit\u00e9'];
+
+var bsdCourant = null;
+var equipSelectionne = null;
+var jType = 'note';
+var numDecomp = null;
+var sessionCount = 0;
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = function() {
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('date-decompo').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  document.getElementById('creation-date').textContent = formatDate(now);
+  var user = localStorage.getItem('wastify_user') || 'Boussoura TALLA';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+  var initiales = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  document.getElementById('journal-avatar').textContent = initiales;
+};
+
+// ============================================================
+// CHARGER BSD
+// ============================================================
+function chargerBSD() {
+  var v = document.getElementById('bsd-select').value;
+  if (!v) {
+    document.getElementById('card-etat').style.display = 'none';
+    document.getElementById('card-selection').style.display = 'none';
+    document.getElementById('card-matieres').style.display = 'none';
+    bsdCourant = null;
+    return;
+  }
+  bsdCourant = JSON.parse(JSON.stringify(BSD_DATA[v])); // deep copy
+  document.getElementById('num-lot-bsd').value = bsdCourant.lot;
+  document.getElementById('poids-bsd').value = bsdCourant.poidsTotal.toFixed(2) + ' kg';
+
+  renderEtatBSD();
+  renderEquipements();
+
+  document.getElementById('card-etat').style.display = 'block';
+  document.getElementById('card-selection').style.display = 'block';
+  document.getElementById('card-matieres').style.display = 'none';
+
+  ajouterJournalAuto('BSD s\u00e9lectionn\u00e9 : ' + bsdCourant.ref + ' \u2014 ' + bsdCourant.client);
+}
+
+// ============================================================
+// ÉTAT DU BSD
+// ============================================================
+function renderEtatBSD() {
+  if (!bsdCourant) return;
+  var tbody = document.getElementById('etat-tbody');
+  var totalDecomp = 0;
+  var totalBSD = bsdCourant.poidsTotal;
+
+  tbody.innerHTML = bsdCourant.equipements.map(function(e) {
+    var pct = e.poids > 0 ? Math.round((e.poidsDecompose / e.poids) * 100) : 0;
+    var restePoids = e.poids - e.poidsDecompose;
+    var resteQte = e.qte - e.decompose;
+    totalDecomp += e.poidsDecompose;
+
+    var statut, badgeClass;
+    if (resteQte === 0) { statut = 'Termin\u00e9'; badgeClass = 'badge-complet'; }
+    else if (e.decompose > 0) { statut = resteQte + ' restant(s)'; badgeClass = 'badge-partiel'; }
+    else { statut = 'Non trait\u00e9'; badgeClass = 'badge-vide'; }
+
+    var barColor = pct === 100 ? '#8CC740' : (pct > 0 ? '#559FD7' : '#dde1e5');
+
+    return '<tr>' +
+      '<td style="font-weight:bold;">' + e.nom + '</td>' +
+      '<td>' + e.qte + ' u. / ' + e.poids.toFixed(1) + ' kg</td>' +
+      '<td>' + e.decompose + ' u. / ' + e.poidsDecompose.toFixed(1) + ' kg</td>' +
+      '<td>' + resteQte + ' u. / ' + restePoids.toFixed(1) + ' kg</td>' +
+      '<td><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div> <span style="font-size:11px;color:#888;">'+pct+'%</span></td>' +
+      '<td><span class="badge-reste '+badgeClass+'">' + statut + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  var pct = totalBSD > 0 ? Math.min(100, Math.round((totalDecomp / totalBSD) * 100)) : 0;
+  document.getElementById('etat-total-bsd').textContent = totalBSD.toFixed(1) + ' kg';
+  document.getElementById('etat-total-decomp').textContent = totalDecomp.toFixed(1) + ' kg';
+  document.getElementById('etat-total-reste').textContent = (totalBSD - totalDecomp).toFixed(1) + ' kg';
+  document.getElementById('etat-resume').textContent = totalDecomp.toFixed(1) + ' / ' + totalBSD.toFixed(1) + ' kg d\u00e9compos\u00e9s';
+
+  var bar = document.getElementById('bilan-bar');
+  bar.style.width = pct + '%';
+  bar.className = 'bilan-bar-fill' + (pct > 100 ? ' error' : (pct >= 80 ? '' : ''));
+}
+
+// ============================================================
+// ÉQUIPEMENTS À SÉLECTIONNER
+// ============================================================
+function renderEquipements() {
+  if (!bsdCourant) return;
+  var grid = document.getElementById('equip-grid');
+  grid.innerHTML = bsdCourant.equipements.map(function(e) {
+    var resteQte = e.qte - e.decompose;
+    var estComplet = resteQte === 0;
+    var classes = 'equip-card' + (estComplet ? ' complet' : '');
+    var resteClass = estComplet ? 'zero' : (resteQte < e.qte ? 'warn' : 'ok');
+    var resteLabel = estComplet ? '&#10003; Tout d\u00e9compos\u00e9' : (resteQte + ' / ' + e.qte + ' restant(s)');
+
+    return '<div class="' + classes + '" id="equip-' + e.id + '" onclick="' + (estComplet ? '' : 'selectionnerEquip(\''+e.id+'\')') + '">' +
+      '<div class="equip-check">&#10003;</div>' +
+      '<div class="equip-name">' + e.nom + '</div>' +
+      '<div class="equip-info">' + e.qte + ' unit\u00e9s \u2014 ' + e.poids.toFixed(1) + ' kg total</div>' +
+      '<div class="equip-reste ' + resteClass + '">' + resteLabel + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function selectionnerEquip(id) {
+  if (!bsdCourant) return;
+  var equip = bsdCourant.equipements.find(function(e){ return e.id === id; });
+  if (!equip) return;
+
+  var resteQte = equip.qte - equip.decompose;
+  if (resteQte === 0) return;
+
+  // Désélectionner les autres
+  document.querySelectorAll('.equip-card').forEach(function(c){ c.classList.remove('selected'); });
+  document.getElementById('equip-' + id).classList.add('selected');
+
+  equipSelectionne = equip;
+
+  // Afficher zone saisie
+  var saisie = document.getElementById('equip-saisie');
+  document.getElementById('equip-saisie-title').textContent = equip.nom + ' \u2014 Saisir la quantit\u00e9 \u00e0 d\u00e9composer';
+  document.getElementById('equip-qte').value = '';
+  document.getElementById('equip-qte').max = resteQte;
+  document.getElementById('equip-qte-max').textContent = 'Maximum : ' + resteQte + ' unit\u00e9(s) restante(s)';
+  document.getElementById('equip-poids').value = '';
+  var poidsRestant = equip.poids - equip.poidsDecompose;
+  document.getElementById('equip-poids-info').textContent = 'Poids restant : ' + poidsRestant.toFixed(1) + ' kg';
+
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  sessionCount++;
+  document.getElementById('equip-lot').value = 'N\u00b0/' + pad(now.getDate()) + '/' + pad(now.getMonth()+1) + '/' + now.getFullYear() + '/DECOMP/' + String(sessionCount).padStart(3,'0');
+
+  saisie.classList.add('visible');
+
+  // Afficher section matières
+  document.getElementById('card-matieres').style.display = 'block';
+  document.getElementById('matieres-title').textContent = 'Etape 3 \u2014 Mati\u00e8res issues de : ' + equip.nom;
+  document.getElementById('matieres-equip-info').textContent = equip.nom;
+  document.getElementById('matieres-tbody').innerHTML = '';
+  document.getElementById('m-entree').innerHTML = '0,00 <span class="metric-unit">kg</span>';
+  document.getElementById('total-matieres').textContent = '0,00 kg';
+  document.getElementById('poids-residus').value = '';
+  document.getElementById('alert-desequilibre').classList.remove('visible');
+  document.getElementById('alert-equilibre').classList.remove('visible');
+  updateMetrics();
+
+  document.getElementById('card-matieres').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function verifierQte() {
+  if (!equipSelectionne) return;
+  var qte = parseInt(document.getElementById('equip-qte').value) || 0;
+  var resteQte = equipSelectionne.qte - equipSelectionne.decompose;
+  if (qte > resteQte) {
+    document.getElementById('equip-qte').value = resteQte;
+    alert('Maximum ' + resteQte + ' unit\u00e9(s) pour cet \u00e9quipement.');
+  }
+  if (qte > 0) {
+    var poidsEstime = ((equipSelectionne.poids - equipSelectionne.poidsDecompose) / (resteQte)) * qte;
+    document.getElementById('equip-poids').placeholder = poidsEstime.toFixed(1) + ' kg (estim\u00e9)';
+  }
+}
+
+// ============================================================
+// MATIÈRES
+// ============================================================
+function ajouterMatiere() {
+  var tbody = document.getElementById('matieres-tbody');
+  var tr = document.createElement('tr');
+  var mO = matieresList.map(function(m){return '<option>'+m+'</option>';}).join('');
+  var catO = categories.map(function(c){return '<option>'+c+'</option>';}).join('');
+  var destO = destinations.map(function(d){return '<option>'+d+'</option>';}).join('');
+  var uO = unites.map(function(u){return '<option>'+u+'</option>';}).join('');
+  tr.innerHTML =
+    '<td><select>'+mO+'</select></td>' +
+    '<td><select>'+catO+'</select></td>' +
+    '<td><input type="number" step="0.01" min="0" placeholder="0,00" class="p-inp" onchange="updateMetrics()"></td>' +
+    '<td><select>'+uO+'</select></td>' +
+    '<td><select>'+destO+'</select></td>' +
+    '<td style="text-align:center"><input type="checkbox" checked title="Valorisable"></td>' +
+    '<td><button onclick="this.closest(\'tr\').remove();updateMetrics();" style="background:none;border:none;color:#b03a2e;cursor:pointer;font-size:15px;">&#215;</button></td>';
+  tbody.appendChild(tr);
+}
+
+function updateMetrics() {
+  var poidsEntree = parseFloat(document.getElementById('equip-poids').value) || 0;
+  var residus = parseFloat(document.getElementById('poids-residus').value) || 0;
+  var totalMatieres = 0;
+  document.querySelectorAll('.p-inp').forEach(function(i){ totalMatieres += parseFloat(i.value) || 0; });
+  var totalAvecResidus = totalMatieres + residus;
+  var ecart = Math.abs(poidsEntree - totalAvecResidus);
+  var taux = poidsEntree > 0 ? Math.round((totalMatieres / poidsEntree) * 100) : 0;
+
+  document.getElementById('m-entree').innerHTML = poidsEntree.toFixed(2) + ' <span class="metric-unit">kg</span>';
+  document.getElementById('m-sortie').innerHTML = totalMatieres.toFixed(2) + ' <span class="metric-unit">kg</span>';
+  document.getElementById('m-ecart').innerHTML = ecart.toFixed(2) + ' <span class="metric-unit">kg</span>';
+  document.getElementById('m-taux').innerHTML = taux + ' <span class="metric-unit">%</span>';
+  document.getElementById('total-matieres').textContent = totalMatieres.toFixed(2) + ' kg';
+
+  var tolerance = poidsEntree * 0.02; // 2% de tolérance
+  if (poidsEntree > 0 && totalAvecResidus > 0) {
+    if (ecart <= tolerance) {
+      document.getElementById('alert-desequilibre').classList.remove('visible');
+      document.getElementById('alert-equilibre').classList.add('visible');
+      document.getElementById('m-ecart').style.color = '#3d7a14';
+    } else {
+      document.getElementById('alert-desequilibre').classList.add('visible');
+      document.getElementById('alert-equilibre').classList.remove('visible');
+      document.getElementById('alert-desequilibre-text').textContent =
+        'Ec\u00e0rt de ' + ecart.toFixed(2) + ' kg entre le poids entr\u00e9 (' + poidsEntree.toFixed(2) + ' kg) et les mati\u00e8res (' + totalAvecResidus.toFixed(2) + ' kg). V\u00e9rifiez les pes\u00e9es.';
+      document.getElementById('m-ecart').style.color = '#b03a2e';
+    }
+  } else {
+    document.getElementById('alert-desequilibre').classList.remove('visible');
+    document.getElementById('alert-equilibre').classList.remove('visible');
+  }
+}
+
+// ============================================================
+// VALIDER SESSION
+// ============================================================
+function validerSession() {
+  if (!equipSelectionne) { alert('S\u00e9lectionnez un \u00e9quipement.'); return; }
+  var qte = parseInt(document.getElementById('equip-qte').value) || 0;
+  var poids = parseFloat(document.getElementById('equip-poids').value) || 0;
+  if (qte === 0) { alert('Saisissez la quantit\u00e9 \u00e0 d\u00e9composer.'); return; }
+  if (poids === 0) { alert('Saisissez le poids \u00e0 d\u00e9composer.'); return; }
+
+  var totalMatieres = 0;
+  document.querySelectorAll('.p-inp').forEach(function(i){ totalMatieres += parseFloat(i.value) || 0; });
+  var residus = parseFloat(document.getElementById('poids-residus').value) || 0;
+  if (totalMatieres + residus === 0) { alert('Saisissez au moins une mati\u00e8re issue du tri.'); return; }
+
+  var ecart = Math.abs(poids - (totalMatieres + residus));
+  var tolerance = poids * 0.02;
+  if (ecart > tolerance) {
+    var conf = confirm('Attention : \u00e9cart de ' + ecart.toFixed(2) + ' kg entre le poids d\u00e9compos\u00e9 et les mati\u00e8res. Confirmer quand m\u00eame ?');
+    if (!conf) return;
+  }
+
+  // Mettre à jour les compteurs de l'équipement
+  equipSelectionne.decompose += qte;
+  equipSelectionne.poidsDecompose += poids;
+
+  // Rafraîchir l'état et les équipements
+  renderEtatBSD();
+  renderEquipements();
+
+  // Cacher la zone saisie et matières
+  document.getElementById('equip-saisie').classList.remove('visible');
+  document.querySelectorAll('.equip-card').forEach(function(c){ c.classList.remove('selected'); });
+  document.getElementById('card-matieres').style.display = 'none';
+  equipSelectionne = null;
+
+  ajouterJournalAuto('Session d\u00e9composition valid\u00e9e : ' + qte + ' ' + equipSelectionne_nom + ' \u2014 ' + poids.toFixed(1) + ' kg \u2014 ' + (totalMatieres + residus).toFixed(1) + ' kg de mati\u00e8res');
+
+  // Vérifier si tout est décomposé
+  var toutDecompose = bsdCourant.equipements.every(function(e){ return e.decompose >= e.qte; });
+  if (toutDecompose) {
+    alert('Tous les \u00e9quipements ont \u00e9t\u00e9 d\u00e9compos\u00e9s ! Vous pouvez confirmer la d\u00e9composition et g\u00e9n\u00e9rer le BLD.');
+    document.getElementById('btn-generer-bld').disabled = false;
+  }
+
+  document.getElementById('card-etat').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+var equipSelectionne_nom = '';
+var _origSelect = selectionnerEquip;
+selectionnerEquip = function(id) {
+  var equip = bsdCourant && bsdCourant.equipements.find(function(e){ return e.id === id; });
+  if (equip) equipSelectionne_nom = equip.nom;
+  _origSelect(id);
+};
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function confirmer() {
+  if (!bsdCourant) { alert('S\u00e9lectionnez un BSD.'); return; }
+  var now = new Date();
+  numDecomp = 'DIA/DECOMP/' + now.getFullYear() + '/' + String(Math.floor(Math.random()*9000)+1000);
+  document.getElementById('doc-num').textContent = numDecomp;
+  document.getElementById('doc-num').style.display = 'inline';
+  document.getElementById('badge-brouillon').style.display = 'none';
+  document.getElementById('badge-valide').style.display = 'inline-block';
+  document.getElementById('s-brouillon').className = 'step done';
+  document.getElementById('s-confirme').className = 'step active';
+  document.getElementById('btn-confirmer').disabled = true;
+  document.getElementById('btn-confirmer').textContent = 'Confirm\u00e9';
+  document.getElementById('btn-fait').disabled = false;
+  document.getElementById('btn-generer-bld').disabled = false;
+  ajouterJournalAuto('D\u00e9composition confirm\u00e9e \u2014 R\u00e9f\u00e9rence : ' + numDecomp);
+  alert('D\u00e9composition confirm\u00e9e ! R\u00e9f\u00e9rence : ' + numDecomp);
+}
+
+function marquerFait() {
+  document.getElementById('s-confirme').className = 'step done';
+  document.getElementById('s-fait').className = 'step active';
+  document.getElementById('badge-valide').textContent = '\u2713 fait';
+  document.getElementById('btn-fait').disabled = true;
+  ajouterJournalAuto('D\u00e9composition marqu\u00e9e Fait');
+  alert('D\u00e9composition marqu\u00e9e comme Fait.');
+}
+
+function genererBLD() {
+  var now = new Date();
+  var numBLD = 'DIA/BLD/' + now.getFullYear() + '/0' + (2000 + Math.floor(Math.random()*100));
+  ajouterJournalAuto('BLD g\u00e9n\u00e9r\u00e9 depuis cette d\u00e9composition : ' + numBLD);
+  alert('BLD ' + numBLD + ' g\u00e9n\u00e9r\u00e9 ! Ouverture du formulaire BLD...');
+  window.location.href = 'bld.html';
+}
+
+function sauvegarder() { ajouterJournalAuto('Sauvegarde brouillon'); alert('Sauvegard\u00e9 en brouillon.'); }
+function annuler() { ajouterJournalAuto('Modifications annul\u00e9es'); alert('Modifications annul\u00e9es.'); }
+
+// ============================================================
+// JOURNAL
+// ============================================================
+function setJType(t, btn) {
+  jType = t;
+  document.querySelectorAll('.jtype-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function formatDate(d) {
+  var pad = function(n){return String(n).padStart(2,'0');};
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' \u00e0 '+pad(d.getHours())+'h'+pad(d.getMinutes());
+}
+
+function ajouterJournalAuto(texte) {
+  var entries = document.getElementById('journal-entries');
+  var div = document.createElement('div');
+  div.className = 'journal-entry';
+  div.innerHTML = '<div class="journal-avatar system">&#9881;</div>' +
+    '<div class="journal-bubble"><div class="journal-meta"><strong>Syst\u00e8me</strong> &mdash; ' + formatDate(new Date()) + '</div>' +
+    '<div class="journal-text system">' + texte + '</div></div>';
+  entries.appendChild(div);
+}
+
+function envoyerJournal() {
+  var texte = document.getElementById('journal-input').value.trim();
+  if (!texte) return;
+  var user = localStorage.getItem('wastify_user') || 'Boussoura TALLA';
+  var initiales = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var entries = document.getElementById('journal-entries');
+  var div = document.createElement('div');
+  div.className = 'journal-entry';
+  div.innerHTML = '<div class="journal-avatar">' + initiales + '</div>' +
+    '<div class="journal-bubble"><div class="journal-meta"><strong>' + user + '</strong> &mdash; ' + formatDate(new Date()) +
+    ' &mdash; <span style="color:#29608A;font-style:italic;">' + (jType==='note'?'Note interne':'Message') + '</span></div>' +
+    '<div class="journal-text' + (jType==='message'?' action':'') + '">' + texte + '</div></div>';
+  entries.appendChild(div);
+  document.getElementById('journal-input').value = '';
+  div.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+</body>
+</html>

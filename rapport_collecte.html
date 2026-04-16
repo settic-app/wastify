@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Rapport de Collecte</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+.page-bar { background: white; border-bottom: 1px solid #dde1e5; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.page-title { font-size: 18px; font-weight: bold; color: #29608A; }
+.body { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #29608A; color: white; border-color: #29608A; }
+.btn-green { background: #8CC740; color: white; border-color: #8CC740; }
+.filter-card { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 16px 18px; margin-bottom: 20px; }
+.filter-title { font-size: 12px; font-weight: bold; color: #29608A; text-transform: uppercase; margin-bottom: 12px; }
+.filter-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; }
+.field input, .field select { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 13px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.field input:focus, .field select:focus { outline: none; border-color: #559FD7; }
+.metrics-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 20px; }
+.metric-card { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 14px 16px; position: relative; overflow: hidden; }
+.metric-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; }
+.mc-blue::before { background:#559FD7; }
+.mc-green::before { background:#8CC740; }
+.mc-teal::before { background:#0e6655; }
+.mc-orange::before { background:#e67e22; }
+.mc-dark::before { background:#29608A; }
+.metric-label { font-size:11px; color:#888; text-transform:uppercase; margin-bottom:4px; }
+.metric-value { font-size:22px; font-weight:bold; color:#29608A; }
+.metric-unit { font-size:12px; color:#888; font-weight:normal; }
+.metric-sub { font-size:11px; color:#888; margin-top:3px; }
+.charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 12px 18px; border-bottom: 1px solid #dde1e5; display: flex; align-items: center; justify-content: space-between; }
+.card-head-title { font-size: 14px; font-weight: bold; color: #29608A; }
+.card-body { padding: 16px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+.bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.bar { width:100%; border-radius:4px 4px 0 0; cursor:pointer; transition:opacity 0.2s; }
+.bar:hover { opacity:0.75; }
+.bar-label { font-size:10px; color:#888; }
+.bar-val { font-size:10px; font-weight:bold; color:#29608A; }
+.donut-wrap { display:flex; align-items:center; gap:14px; }
+.donut-legend { flex:1; }
+.donut-item { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:12px; }
+.donut-color { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
+.donut-name { flex:1; }
+.donut-pct { font-weight:bold; color:#29608A; }
+.table-card { background:white; border-radius:10px; border:1px solid #dde1e5; overflow:hidden; margin-bottom:20px; }
+.table-toolbar { padding:12px 18px; border-bottom:1px solid #dde1e5; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.table-search { border:1px solid #c8cfd8; border-radius:6px; padding:6px 12px; font-size:13px; font-family:Arial,sans-serif; width:220px; }
+.table-search:focus { outline:none; border-color:#559FD7; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { padding:9px 12px; text-align:left; font-size:11px; font-weight:bold; color:#29608A; border-bottom:2px solid #dde1e5; background:#f4f6f8; text-transform:uppercase; white-space:nowrap; }
+td { padding:9px 12px; border-bottom:1px solid #f4f6f8; }
+tr:hover td { background:#f8fafb; }
+.num { text-align:right; font-weight:bold; color:#29608A; }
+.bsd-ref { color:#559FD7; font-weight:bold; cursor:pointer; }
+.bsd-ref:hover { text-decoration:underline; }
+.badge { display:inline-block; border-radius:20px; padding:2px 9px; font-size:11px; font-weight:bold; }
+.badge-fait { background:#eaf5d5; color:#3d7a14; border:1px solid #8CC740; }
+.badge-pret { background:#e8f0f7; color:#29608A; border:1px solid #559FD7; }
+.badge-brouillon { background:#f4f6f8; color:#888; border:1px solid #dde1e5; }
+.table-footer { padding:12px 18px; border-top:1px solid #dde1e5; display:flex; align-items:center; justify-content:space-between; background:#f4f6f8; font-size:12px; color:#888; }
+.table-footer strong { color:#29608A; }
+.section-title { font-size:14px; font-weight:bold; color:#29608A; margin-bottom:12px; }
+@media (max-width:900px) { .filter-grid { grid-template-columns:1fr 1fr; } .metrics-row { grid-template-columns:1fr 1fr; } .charts-grid { grid-template-columns:1fr; } }
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="dashboard_ops.html" class="nav-link">&#8592; Dashboard</a>
+    <a href="rapport_listing.html" class="nav-link">Listing &#8594;</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+<div class="page-bar">
+  <div class="page-title">&#128202; Rapport de collecte</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" onclick="window.print()">&#128438; Imprimer</button>
+    <button class="btn btn-green" onclick="alert('Export Excel...')">&#128190; Export Excel</button>
+    <button class="btn btn-primary" onclick="alert('Export PDF...')">&#128196; Export PDF</button>
+  </div>
+</div>
+<div class="body">
+  <!-- FILTRES -->
+  <div class="filter-card">
+    <div class="filter-title">&#127797; Filtres</div>
+    <div class="filter-grid">
+      <div class="field"><label>Du</label><input type="date" value="2026-01-01"></div>
+      <div class="field"><label>Au</label><input type="date" value="2026-03-30"></div>
+      <div class="field">
+        <label>Client</label>
+        <select onchange="filtrerDonnees()">
+          <option value="">Tous les clients</option>
+          <option>Orange Sénégal</option>
+          <option>Sonatel</option>
+          <option>EGMT</option>
+          <option>Transport I. Sakho</option>
+          <option>GMD</option>
+          <option>SENEAU</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Type de service</label>
+        <select onchange="filtrerDonnees()">
+          <option value="">Tous</option>
+          <option>Collecte & Recyclage DEEE</option>
+          <option>Destruction disques durs</option>
+          <option>Destruction archives</option>
+          <option>Collecte déchets recyclables</option>
+          <option>Collecte déchets ménagers</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Statut BSD</label>
+        <select onchange="filtrerDonnees()">
+          <option value="">Tous</option>
+          <option>Fait</option>
+          <option>Prêt</option>
+          <option>Brouillon</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary" onclick="filtrerDonnees()">Appliquer</button>
+      <button class="btn" onclick="reinitialiser()">Réinitialiser</button>
+    </div>
+  </div>
+
+  <!-- MÉTRIQUES -->
+  <div class="metrics-row">
+    <div class="metric-card mc-blue"><div class="metric-label">Total BSD</div><div class="metric-value" id="m-bsd">24 <span class="metric-unit">BSD</span></div><div class="metric-sub">T1 2026</div></div>
+    <div class="metric-card mc-green"><div class="metric-label">Tonnage total</div><div class="metric-value">3,2 <span class="metric-unit">t</span></div><div class="metric-sub">3 200 kg</div></div>
+    <div class="metric-card mc-teal"><div class="metric-label">Clients actifs</div><div class="metric-value">7</div><div class="metric-sub">ce trimestre</div></div>
+    <div class="metric-card mc-orange"><div class="metric-label">Moy. par collecte</div><div class="metric-value">133 <span class="metric-unit">kg</span></div><div class="metric-sub">par BSD</div></div>
+    <div class="metric-card mc-dark"><div class="metric-label">Taux valorisation</div><div class="metric-value">87 <span class="metric-unit">%</span></div><div class="metric-sub">vs 82% T4 2025</div></div>
+  </div>
+
+  <!-- GRAPHIQUES -->
+  <div class="charts-grid">
+    <div class="card">
+      <div class="card-head"><div class="card-head-title">Tonnage collecté par mois (kg)</div></div>
+      <div class="card-body">
+        <div class="bar-chart">
+          <div class="bar-col"><div class="bar-val">820</div><div class="bar" style="height:82px;background:#559FD7;"></div><div class="bar-label">Jan</div></div>
+          <div class="bar-col"><div class="bar-val">940</div><div class="bar" style="height:94px;background:#559FD7;"></div><div class="bar-label">Fév</div></div>
+          <div class="bar-col"><div class="bar-val">1440</div><div class="bar" style="height:140px;background:#8CC740;"></div><div class="bar-label">Mars ▲</div></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#888;"><div style="width:10px;height:10px;background:#559FD7;border-radius:2px;"></div>Mois passés</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#888;"><div style="width:10px;height:10px;background:#8CC740;border-radius:2px;"></div>Mois en cours</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-head-title">Répartition par type</div></div>
+      <div class="card-body">
+        <div class="donut-wrap">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="32" fill="none" stroke="#dde1e5" stroke-width="13"/>
+            <circle cx="44" cy="44" r="32" fill="none" stroke="#559FD7" stroke-width="13" stroke-dasharray="80 121" stroke-dashoffset="0" transform="rotate(-90 44 44)"/>
+            <circle cx="44" cy="44" r="32" fill="none" stroke="#8CC740" stroke-width="13" stroke-dasharray="48 153" stroke-dashoffset="-80" transform="rotate(-90 44 44)"/>
+            <circle cx="44" cy="44" r="32" fill="none" stroke="#e67e22" stroke-width="13" stroke-dasharray="29 172" stroke-dashoffset="-128" transform="rotate(-90 44 44)"/>
+            <circle cx="44" cy="44" r="32" fill="none" stroke="#29608A" stroke-width="13" stroke-dasharray="24 177" stroke-dashoffset="-157" transform="rotate(-90 44 44)"/>
+            <text x="44" y="48" text-anchor="middle" font-size="12" font-weight="bold" fill="#29608A" font-family="Arial">3,2t</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="donut-item"><div class="donut-color" style="background:#559FD7"></div><span class="donut-name">DEEE</span><span class="donut-pct">40%</span></div>
+            <div class="donut-item"><div class="donut-color" style="background:#8CC740"></div><span class="donut-name">Métaux</span><span class="donut-pct">24%</span></div>
+            <div class="donut-item"><div class="donut-color" style="background:#e67e22"></div><span class="donut-name">Plastique</span><span class="donut-pct">15%</span></div>
+            <div class="donut-item"><div class="donut-color" style="background:#29608A"></div><span class="donut-name">Papier</span><span class="donut-pct">12%</span></div>
+            <div class="donut-item"><div class="donut-color" style="background:#dde1e5"></div><span class="donut-name">Autres</span><span class="donut-pct">9%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNTHÈSE PAR CLIENT -->
+  <div class="section-title">&#128101; Synthèse par client</div>
+  <div class="table-card" style="margin-bottom:20px;">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr>
+          <th>Client</th><th>Nb BSD</th><th>Poids total</th>
+          <th>DEEE</th><th>Métaux</th><th>Plastique</th><th>Papier</th><th>Autres</th><th>Taux val.</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><strong>IDEX SA</strong></td><td class="num">7</td><td class="num">980 kg</td><td class="num">420 kg</td><td class="num">180 kg</td><td class="num">210 kg</td><td class="num">120 kg</td><td class="num">50 kg</td><td class="num" style="color:#3d7a14;">92%</td></tr>
+          <tr><td><strong>Orange Sénégal</strong></td><td class="num">5</td><td class="num">720 kg</td><td class="num">380 kg</td><td class="num">120 kg</td><td class="num">140 kg</td><td class="num">50 kg</td><td class="num">30 kg</td><td class="num" style="color:#3d7a14;">89%</td></tr>
+          <tr><td><strong>Sonatel</strong></td><td class="num">4</td><td class="num">640 kg</td><td class="num">290 kg</td><td class="num">150 kg</td><td class="num">110 kg</td><td class="num">60 kg</td><td class="num">30 kg</td><td class="num" style="color:#3d7a14;">88%</td></tr>
+          <tr><td><strong>Transp. I. Sakho</strong></td><td class="num">4</td><td class="num">480 kg</td><td class="num">80 kg</td><td class="num">200 kg</td><td class="num">120 kg</td><td class="num">50 kg</td><td class="num">30 kg</td><td class="num" style="color:#7a5c00;">78%</td></tr>
+          <tr><td><strong>EGMT</strong></td><td class="num">2</td><td class="num">240 kg</td><td class="num">100 kg</td><td class="num">80 kg</td><td class="num">40 kg</td><td class="num">15 kg</td><td class="num">5 kg</td><td class="num" style="color:#3d7a14;">90%</td></tr>
+          <tr><td><strong>GMD</strong></td><td class="num">1</td><td class="num">80 kg</td><td class="num">60 kg</td><td class="num">10 kg</td><td class="num">5 kg</td><td class="num">5 kg</td><td class="num">0 kg</td><td class="num" style="color:#3d7a14;">94%</td></tr>
+          <tr><td><strong>SENEAU</strong></td><td class="num">1</td><td class="num">60 kg</td><td class="num">50 kg</td><td class="num">5 kg</td><td class="num">5 kg</td><td class="num">0 kg</td><td class="num">0 kg</td><td class="num" style="color:#3d7a14;">100%</td></tr>
+          <tr style="background:#f4f6f8;font-weight:bold;"><td>TOTAL</td><td class="num">24</td><td class="num">3 200 kg</td><td class="num">1 380 kg</td><td class="num">745 kg</td><td class="num">630 kg</td><td class="num">300 kg</td><td class="num">145 kg</td><td class="num" style="color:#3d7a14;">87%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DÉTAIL BSD -->
+  <div class="section-title">&#128196; Détail des BSD</div>
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div style="font-size:14px;font-weight:bold;color:#29608A;" id="table-count">24 BSD — T1 2026</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="table-search" type="text" placeholder="🔍 Rechercher..." oninput="rechercherBSD(this.value)">
+        <a href="rapport_listing.html" class="btn">Voir listing &#8594;</a>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr>
+          <th>N° BSD</th><th>Lot BSD</th><th>Date</th><th>Mois</th><th>Trim.</th>
+          <th>Client</th><th>Site</th><th>Service</th><th>Poids (kg)</th><th>Agent</th><th>Statut</th>
+        </tr></thead>
+        <tbody id="bsd-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <div>Affichage <strong id="aff-count">5</strong> sur <strong>24</strong> résultats</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var donnees = [
+  { ref:'DIA/BSD/2026/05000', lot:'N°/27/03/2026/BSD/05000', date:'27/03/2026', mois:'Mars', trim:'T1', client:'Orange Sénégal', site:'Diamniadio', service:'Collecte DEEE', poids:195.0, agent:'I. WOULARE', statut:'Prêt' },
+  { ref:'DIA/BSD/2026/04999', lot:'N°/26/03/2026/BSD/04999', date:'26/03/2026', mois:'Mars', trim:'T1', client:'Transp. I. Sakho', site:'Route Rufisque', service:'Collecte déchets ménagers', poids:120.0, agent:'Tapha', statut:'Fait' },
+  { ref:'DIA/BSD/2026/04998', lot:'N°/25/03/2026/BSD/04998', date:'25/03/2026', mois:'Mars', trim:'T1', client:'Orange Sénégal', site:'Almadies', service:'Collecte DEEE', poids:88.0, agent:'I. WOULARE', statut:'Prêt' },
+  { ref:'DIA/BSD/2026/04997', lot:'N°/24/03/2026/BSD/04997', date:'24/03/2026', mois:'Mars', trim:'T1', client:'Sonatel', site:'Plateau', service:'Collecte DEEE', poids:210.0, agent:'Tapha', statut:'Fait' },
+  { ref:'DIA/BSD/2026/04996', lot:'—', date:'23/03/2026', mois:'Mars', trim:'T1', client:'EGMT', site:'Diamniadio', service:'Collecte DEEE', poids:55.0, agent:'I. WOULARE', statut:'Brouillon' },
+];
+
+function renderTable(data) {
+  var tbody = document.getElementById('bsd-tbody');
+  tbody.innerHTML = data.map(function(r) {
+    var bc = r.statut==='Fait'?'badge-fait':(r.statut==='Prêt'?'badge-pret':'badge-brouillon');
+    return '<tr>'+
+      '<td class="bsd-ref" onclick="alert(\'Ouverture BSD '+r.ref+'...\')">'+r.ref.replace('DIA/BSD/2026/','')+'</td>'+
+      '<td style="font-size:11px;color:#888;">'+r.lot+'</td>'+
+      '<td>'+r.date+'</td><td>'+r.mois+'</td><td>'+r.trim+'</td>'+
+      '<td>'+r.client+'</td><td>'+r.site+'</td>'+
+      '<td style="font-size:12px;">'+r.service+'</td>'+
+      '<td class="num">'+r.poids.toFixed(1)+'</td>'+
+      '<td>'+r.agent+'</td>'+
+      '<td><span class="badge '+bc+'">'+r.statut+'</span></td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('aff-count').textContent = data.length;
+}
+
+function filtrerDonnees() { renderTable(donnees); }
+function rechercherBSD(val) {
+  var v = val.toLowerCase();
+  renderTable(donnees.filter(function(r){ return r.ref.toLowerCase().includes(v)||r.client.toLowerCase().includes(v)||r.service.toLowerCase().includes(v); }));
+}
+function reinitialiser() { renderTable(donnees); }
+
+window.onload = function() {
+  renderTable(donnees);
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+};
+</script>
+</body>
+</html>

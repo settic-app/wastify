@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Portail</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; cursor: pointer; }
+.body { padding: 20px 24px; max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+/* WELCOME */
+.welcome { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+.w-avatar { width: 50px; height: 50px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; flex-shrink: 0; }
+.w-title { font-size: 18px; font-weight: bold; color: #29608A; }
+.w-sub { font-size: 13px; color: #888; margin-top: 2px; }
+.profil-chip { display: inline-block; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: bold; margin-top: 6px; }
+.pc-client { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.pc-partenaire { background: #f0e6ff; color: #6c3483; border: 1px solid #c39bd3; }
+/* MÉTRIQUES */
+.metrics { display: grid; gap: 14px; }
+.mg-3 { grid-template-columns: repeat(3,1fr); }
+.mg-2 { grid-template-columns: repeat(2,1fr); }
+.mc { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 16px 18px; }
+.mc-label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+.mc-value { font-size: 24px; font-weight: bold; color: #29608A; }
+.mc-unit { font-size: 13px; color: #888; font-weight: normal; }
+/* TABS */
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.tabs { display: flex; border-bottom: 1px solid #dde1e5; background: #fafbfc; }
+.tab { padding: 11px 18px; font-size: 13px; cursor: pointer; border: none; background: none; color: #888; font-family: Arial, sans-serif; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; }
+.tab.active { color: #29608A; border-bottom-color: #8CC740; font-weight: bold; background: white; }
+.tab-content { display: none; padding: 18px; }
+.tab-content.active { display: block; }
+/* TABLE */
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.filter-row select, .filter-row input { border: 1px solid #c8cfd8; border-radius: 6px; padding: 6px 10px; font-size: 13px; font-family: Arial, sans-serif; background: white; color: #404041; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; background: #f4f6f8; text-transform: uppercase; }
+td { padding: 9px 12px; border-bottom: 1px solid #f4f6f8; }
+tr:hover td { background: #f8fafb; }
+.badge { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: bold; }
+.b-prev { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.b-valide { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.b-brouillon { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.btn-sm { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #559FD7; background: white; color: #559FD7; font-family: Arial, sans-serif; }
+.btn-sm:hover { background: #eef5fc; }
+.lot-pill { display: inline-block; background: #eaf5d5; border: 1px solid #8CC740; border-radius: 20px; padding: 2px 8px; font-size: 10px; color: #3d7a14; font-weight: bold; }
+/* MESSAGES */
+.msg-card { border: 1px solid #dde1e5; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
+.msg-card.settic { border-left: 3px solid #29608A; }
+.msg-card.moi { border-left: 3px solid #8CC740; background: #f8fafb; }
+.msg-header { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.msg-from { font-size: 13px; font-weight: bold; }
+.msg-time { font-size: 11px; color: #888; }
+.msg-bsd { font-size: 12px; color: #559FD7; font-weight: bold; }
+.msg-text { font-size: 13px; color: #404041; line-height: 1.5; }
+.unread { background: #fdf0ef; color: #b03a2e; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: bold; }
+.btn-primary { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; border: none; background: #29608A; color: white; font-family: Arial, sans-serif; }
+@media(max-width:600px){ .metrics{grid-template-columns:1fr!important;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify — Portail</span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill" id="user-pill" onclick="localStorage.clear();window.location.href='index.html'">Déconnexion ↗</div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- WELCOME -->
+  <div class="welcome">
+    <div class="w-avatar" id="w-avatar" style="background:#29608A;">?</div>
+    <div>
+      <div class="w-title" id="w-title">Bienvenue</div>
+      <div class="w-sub">Portail de suivi &mdash; SetTIC SARL, Diamniadio</div>
+      <div id="profil-chip-wrap"></div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div style="font-size:11px;color:#888;">Derni&egrave;re connexion</div>
+      <div style="font-size:13px;font-weight:bold;color:#29608A;" id="last-login"></div>
+    </div>
+  </div>
+
+  <!-- MÉTRIQUES -->
+  <div class="metrics" id="metrics-container"></div>
+
+  <!-- ONGLETS CLIENT -->
+  <div class="card" id="card-client" style="display:none;">
+    <div class="tabs" id="tabs-client">
+      <button class="tab active" onclick="showTab('bsd',this)">&#128196; Mes BSD</button>
+      <button class="tab" onclick="showTab('listing',this)">&#128203; Listing &eacute;quipements</button>
+      <button class="tab" onclick="showTab('rapports',this)">&#128202; Rapports</button>
+      <button class="tab" onclick="showTab('messages',this)">&#128233; Messages <span id="msg-badge" style="background:#e74c3c;color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">1</span></button>
+    </div>
+
+    <!-- MES BSD -->
+    <div class="tab-content active" id="tab-bsd">
+      <div class="filter-row">
+        <select><option>Toutes les ann&eacute;es</option><option selected>2026</option><option>2025</option></select>
+        <select><option selected>T1 2026</option><option>T2 2026</option></select>
+        <select><option>Tous les services</option><option>Collecte DEEE</option><option>Destruction DD</option></select>
+        <input type="text" placeholder="&#128269; Rechercher...">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>N&deg; BSD</th><th>Lot BSD</th><th>Date</th><th>Mois</th><th>Trim.</th><th>Site</th><th>Service</th><th>Poids</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/05000</td>
+              <td><span class="lot-pill">N°/27/03/2026/BSD/05000</span></td>
+              <td>27/03/2026</td><td>Mars</td><td>T1</td><td>Diamniadio</td><td>Collecte DEEE</td><td>195 kg</td>
+              <td><span class="badge b-prev">Pr&eacute;-valid&eacute;</span></td>
+              <td><button class="btn-sm">Voir</button></td>
+            </tr>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/04992</td>
+              <td><span class="lot-pill">N°/15/03/2026/BSD/04992</span></td>
+              <td>15/03/2026</td><td>Mars</td><td>T1</td><td>Zone Ind.</td><td>Collecte DEEE</td><td>140 kg</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+              <td><button class="btn-sm">Voir</button></td>
+            </tr>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BSD/2026/04955</td>
+              <td><span class="lot-pill">N°/18/02/2026/BSD/04955</span></td>
+              <td>18/02/2026</td><td>F&eacute;vrier</td><td>T1</td><td>Diamniadio</td><td>Collecte DEEE</td><td>180 kg</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+              <td><button class="btn-sm">Voir</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LISTING ÉQUIPEMENTS -->
+    <div class="tab-content" id="tab-listing">
+      <div style="font-size:13px;color:#888;margin-bottom:14px;">Listing d&eacute;taill&eacute; de vos &eacute;quipements collect&eacute;s. Exportable en Excel.</div>
+      <div class="filter-row">
+        <select><option>Tous les BSD</option><option>BSD 05000</option><option>BSD 04992</option></select>
+        <select><option>Tous les types</option><option>Unit&eacute; centrale</option><option>Imprimante</option><option>T&eacute;l&eacute;phone</option></select>
+        <button class="btn-primary" onclick="alert('Export Excel listing...')">&#128190; Export Excel</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Date</th><th>N&deg; BSD</th><th>Type</th><th>Marque</th><th>Mod&egrave;le</th><th>Caract&eacute;ristique</th><th>N&deg; s&eacute;rie</th><th>Qt&eacute;</th></tr></thead>
+          <tbody>
+            <tr><td>27/03/2026</td><td style="color:#559FD7;font-weight:bold;">05000</td><td>Unit&eacute; centrale</td><td>Dell</td><td>OptiPlex 7050</td><td>—</td><td style="font-size:11px;">DL7050-2341</td><td>1</td></tr>
+            <tr><td>27/03/2026</td><td style="color:#559FD7;font-weight:bold;">05000</td><td>Imprimante</td><td>HP</td><td>LBP6030</td><td>—</td><td style="color:#888;">N/A</td><td>5</td></tr>
+            <tr><td>27/03/2026</td><td style="color:#559FD7;font-weight:bold;">05000</td><td>Cartouche toner</td><td>HP</td><td>CF280A</td><td style="color:#7a5c00;font-weight:bold;">Toner</td><td style="color:#888;">N/A</td><td>12</td></tr>
+            <tr><td>15/03/2026</td><td style="color:#559FD7;font-weight:bold;">04992</td><td>Ordinateur portable</td><td>Apple</td><td>MacBook Pro 2019</td><td>—</td><td style="font-size:11px;">APL2019-7734</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RAPPORTS -->
+    <div class="tab-content" id="tab-rapports">
+      <div style="font-size:13px;color:#888;margin-bottom:16px;">Vos rapports de collecte et bilans p&eacute;riodiques.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="background:#f4f6f8;border:1px solid #dde1e5;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;">
+          <span style="font-size:24px;">&#128202;</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:bold;color:#29608A;">Rapport collecte T1 2026</div>
+            <div style="font-size:12px;color:#888;">3 BSD &mdash; 515 kg collect&eacute;s &mdash; 92% valoris&eacute;</div>
+          </div>
+          <button class="btn-primary" style="font-size:12px;padding:6px 12px;" onclick="alert('T&eacute;l&eacute;chargement...')">&#128190; T&eacute;l&eacute;charger</button>
+        </div>
+        <div style="background:#f4f6f8;border:1px solid #dde1e5;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;">
+          <span style="font-size:24px;">&#128203;</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:bold;color:#29608A;">Listing &eacute;quipements T1 2026</div>
+            <div style="font-size:12px;color:#888;">18 &eacute;quipements r&eacute;f&eacute;renc&eacute;s</div>
+          </div>
+          <button class="btn-primary" style="font-size:12px;padding:6px 12px;" onclick="alert('T&eacute;l&eacute;chargement...')">&#128190; T&eacute;l&eacute;charger</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="tab-content" id="tab-messages">
+      <div style="font-size:13px;color:#888;margin-bottom:14px;">&Eacute;changez avec l'&eacute;quipe SetTIC sur vos collectes.</div>
+      <div class="msg-card settic">
+        <div class="msg-header">
+          <span class="msg-from">SetTIC — Boussoura TALLA</span>
+          <span class="msg-bsd">BSD 05000</span>
+          <span class="msg-time">27/03/2026 &agrave; 11h32</span>
+        </div>
+        <div class="msg-text">Bonjour, suite &agrave; la collecte du 27 mars, nous avons constat&eacute; un &eacute;cart de poids : pr&eacute;vu 220 kg, r&eacute;el 195 kg. Pouvez-vous confirmer ?</div>
+      </div>
+      <div class="msg-card moi">
+        <div class="msg-header">
+          <span class="msg-from" id="msg-from-client">Client</span>
+          <span class="msg-bsd">BSD 05000</span>
+          <span class="msg-time">27/03/2026 &agrave; 14h15</span>
+        </div>
+        <div class="msg-text">Bonjour, nous confirmons. Une partie n'&eacute;tait pas pr&ecirc;te. Compl&eacute;ment pr&eacute;vu &agrave; la prochaine collecte.</div>
+      </div>
+      <div class="msg-card settic" style="border-left-color:#e74c3c;">
+        <div class="msg-header">
+          <span class="msg-from">SetTIC — Boussoura TALLA</span>
+          <span class="msg-bsd">BSD 04992</span>
+          <span class="msg-time">25/03/2026 &agrave; 09h15</span>
+          <span class="unread">Non lu</span>
+        </div>
+        <div class="msg-text">2 t&eacute;l&eacute;phones suppl&eacute;mentaires collect&eacute;s. Merci de confirmer votre accord pour facturation.</div>
+      </div>
+      <div style="background:#f4f6f8;border-radius:8px;padding:14px;margin-top:8px;">
+        <div style="font-size:12px;font-weight:bold;color:#29608A;text-transform:uppercase;margin-bottom:8px;">Nouveau message</div>
+        <select style="border:1px solid #c8cfd8;border-radius:6px;padding:7px 10px;font-size:13px;font-family:Arial,sans-serif;width:100%;margin-bottom:8px;">
+          <option>BSD DIA/BSD/2026/05000</option><option>BSD DIA/BSD/2026/04992</option><option>Message g&eacute;n&eacute;ral</option>
+        </select>
+        <textarea rows="3" placeholder="Votre message..." style="width:100%;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;resize:vertical;margin-bottom:8px;"></textarea>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn-primary" onclick="alert('Message envoy&eacute; !')">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLETS PARTENAIRE -->
+  <div class="card" id="card-partenaire" style="display:none;">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('bld',this)">&#128666; Mes BLD</button>
+      <button class="tab" onclick="showTab('msg-part',this)">&#128233; Messages</button>
+    </div>
+
+    <!-- MES BLD -->
+    <div class="tab-content active" id="tab-bld">
+      <div class="filter-row">
+        <select><option selected>2026</option><option>2025</option></select>
+        <select><option selected>T1 2026</option><option>T2 2026</option></select>
+        <input type="text" placeholder="&#128269; Rechercher...">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>N&deg; BLD</th><th>Lot BLD</th><th>Date</th><th>Mati&egrave;re</th><th>Poids</th><th>Traitement</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BLD/2026/02000</td>
+              <td><span class="lot-pill">N°/15/03/2026/BLD/02000</span></td>
+              <td>15/03/2026</td><td>M&eacute;taux ferreux</td><td>245 kg</td><td>Recyclage</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+              <td><button class="btn-sm">Voir</button></td>
+            </tr>
+            <tr>
+              <td style="color:#559FD7;font-weight:bold;">DIA/BLD/2026/01999</td>
+              <td><span class="lot-pill">N°/28/02/2026/BLD/01999</span></td>
+              <td>28/02/2026</td><td>Aluminium</td><td>180 kg</td><td>Recyclage</td>
+              <td><span class="badge b-valide">Valid&eacute;</span></td>
+              <td><button class="btn-sm">Voir</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MESSAGES PARTENAIRE -->
+    <div class="tab-content" id="tab-msg-part">
+      <div class="msg-card settic">
+        <div class="msg-header">
+          <span class="msg-from">SetTIC — Boussoura TALLA</span>
+          <span class="msg-bsd">BLD 02000</span>
+          <span class="msg-time">15/03/2026 &agrave; 14h00</span>
+        </div>
+        <div class="msg-text">Bonjour, la livraison de 245 kg de m&eacute;taux ferreux est confirm&eacute;e. Merci de nous faire parvenir le certificat de recyclage.</div>
+      </div>
+      <div style="background:#f4f6f8;border-radius:8px;padding:14px;margin-top:8px;">
+        <textarea rows="3" placeholder="R&eacute;pondre &agrave; SetTIC..." style="width:100%;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;resize:vertical;margin-bottom:8px;"></textarea>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn-primary" onclick="alert('Message envoy&eacute; !')">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(id, btn) {
+  var prefix = id === 'bsd' || id === 'listing' || id === 'rapports' || id === 'messages' ? 'tab-' : 'tab-';
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  var el = document.getElementById('tab-'+id) || document.getElementById(id);
+  if (el) el.classList.add('active');
+  btn.classList.add('active');
+  if (id === 'messages' || id === 'msg-part') document.getElementById('msg-badge') && (document.getElementById('msg-badge').style.display = 'none');
+}
+
+window.onload = function() {
+  var user = localStorage.getItem('wastify_user') || 'Utilisateur';
+  var role = localStorage.getItem('wastify_role') || 'client';
+
+  // Sécurité
+  if (role !== 'client' && role !== 'partenaire') {
+    window.location.href = 'dashboard_ops.html'; return;
+  }
+
+  document.getElementById('user-pill').textContent = user.split(' ')[0] + ' ↗';
+  document.getElementById('w-title').textContent = user;
+  document.getElementById('msg-from-client').textContent = user;
+
+  var init = user.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var av = document.getElementById('w-avatar');
+  av.textContent = init;
+  av.style.background = role === 'partenaire' ? '#6c3483' : '#29608A';
+
+  // Profil chip
+  var chip = role === 'partenaire'
+    ? '<span class="profil-chip pc-partenaire">Partenaire Downstream</span>'
+    : '<span class="profil-chip pc-client">Client</span>';
+  document.getElementById('profil-chip-wrap').innerHTML = chip;
+
+  // Dernière connexion
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('last-login').textContent = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear()+' à '+pad(now.getHours())+'h'+pad(now.getMinutes());
+
+  if (role === 'client') {
+    // MÉTRIQUES CLIENT
+    document.getElementById('metrics-container').className = 'metrics mg-3';
+    document.getElementById('metrics-container').innerHTML =
+      '<div class="mc"><div class="mc-label">BSD ce trimestre</div><div class="mc-value">3</div></div>'+
+      '<div class="mc"><div class="mc-label">Tonnage collect&eacute;</div><div class="mc-value">515 <span class="mc-unit">kg</span></div></div>'+
+      '<div class="mc"><div class="mc-label">Taux valorisation</div><div class="mc-value">92 <span class="mc-unit">%</span></div></div>';
+    document.getElementById('card-client').style.display = 'block';
+
+  } else if (role === 'partenaire') {
+    // MÉTRIQUES PARTENAIRE
+    document.getElementById('metrics-container').className = 'metrics mg-2';
+    document.getElementById('metrics-container').innerHTML =
+      '<div class="mc"><div class="mc-label">BLD re&ccedil;us ce trimestre</div><div class="mc-value">2</div></div>'+
+      '<div class="mc"><div class="mc-label">Tonnage re&ccedil;u</div><div class="mc-value">425 <span class="mc-unit">kg</span></div></div>';
+    document.getElementById('card-partenaire').style.display = 'block';
+  }
+};
+</script>
+</body>
+</html>

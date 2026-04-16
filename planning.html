@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Planning Opérations</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.nav-link { color: rgba(255,255,255,0.75); font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.nav-link:hover { background: rgba(255,255,255,0.15); color: white; }
+
+.page-bar { background: white; border-bottom: 1px solid #dde1e5; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 61px; z-index: 99; }
+.page-title { font-size: 17px; font-weight: bold; color: #29608A; }
+.btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #29608A; color: white; border-color: #29608A; }
+.btn-green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-active { background: #f0f7fd; color: #29608A; border-color: #559FD7; font-weight: bold; }
+
+.layout { display: flex; gap: 0; min-height: calc(100vh - 120px); }
+
+/* SIDEBAR PLANNING */
+.plan-sidebar { width: 260px; flex-shrink: 0; background: white; border-right: 1px solid #dde1e5; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+.mini-cal { }
+.mini-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.mini-cal-title { font-size: 13px; font-weight: bold; color: #29608A; }
+.mini-cal-nav { cursor: pointer; color: #888; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+.mini-cal-nav:hover { background: #f4f6f8; }
+.mini-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.mini-cal-dow { font-size: 10px; color: #888; text-align: center; padding: 2px 0; font-weight: bold; }
+.mini-cal-day { font-size: 12px; text-align: center; padding: 4px 2px; border-radius: 4px; cursor: pointer; }
+.mini-cal-day:hover { background: #f0f7fd; }
+.mini-cal-day.today { background: #29608A; color: white; font-weight: bold; border-radius: 50%; }
+.mini-cal-day.has-event { font-weight: bold; color: #8CC740; }
+.mini-cal-day.selected { background: #e8f0f7; color: #29608A; }
+.mini-cal-day.other-month { color: #ccc; }
+
+.sidebar-filters { }
+.sf-title { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.sf-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; user-select: none; }
+.sf-item label { font-size: 13px; color: #404041; cursor: pointer; flex: 1; }
+.sf-item input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; }
+.sf-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+.sf-agents { }
+.agent-filter-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
+.agent-filter-item label { font-size: 12px; color: #404041; cursor: pointer; flex: 1; }
+.agent-avatar-sm { width: 24px; height: 24px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; flex-shrink: 0; }
+
+/* MAIN CALENDRIER */
+.plan-main { flex: 1; padding: 16px; overflow-x: auto; }
+
+.cal-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.cal-nav-btn { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #dde1e5; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #29608A; font-family: Arial, sans-serif; }
+.cal-nav-btn:hover { background: #f0f7fd; }
+.cal-period { font-size: 16px; font-weight: bold; color: #29608A; min-width: 200px; text-align: center; }
+.view-btns { display: flex; gap: 4px; }
+.view-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid #dde1e5; background: white; font-size: 12px; font-weight: bold; cursor: pointer; color: #888; font-family: Arial, sans-serif; }
+.view-btn.active { background: #29608A; color: white; border-color: #29608A; }
+
+/* VUE SEMAINE */
+.week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); border: 1px solid #dde1e5; border-radius: 10px; overflow: hidden; min-width: 700px; background: white; }
+.week-header { background: #f4f6f8; }
+.week-header-time { padding: 10px 8px; border-bottom: 1px solid #dde1e5; border-right: 1px solid #dde1e5; }
+.week-header-day { padding: 10px 8px; border-bottom: 1px solid #dde1e5; border-right: 1px solid #dde1e5; text-align: center; }
+.week-header-day:last-child { border-right: none; }
+.week-dow { font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; }
+.week-date { font-size: 18px; font-weight: bold; color: #404041; margin-top: 2px; }
+.week-date.today { background: #29608A; color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin: 2px auto 0; font-size: 16px; }
+.week-row { display: contents; }
+.week-time-cell { padding: 4px 8px; font-size: 11px; color: #888; text-align: right; border-right: 1px solid #dde1e5; border-bottom: 1px solid #f4f6f8; vertical-align: top; height: 50px; }
+.week-day-cell { border-right: 1px solid #dde1e5; border-bottom: 1px solid #f4f6f8; position: relative; height: 50px; padding: 2px; vertical-align: top; }
+.week-day-cell:last-child { border-right: none; }
+.week-day-cell.today-col { background: #fafeff; }
+
+/* ÉVÉNEMENTS */
+.event { border-radius: 5px; padding: 3px 6px; font-size: 11px; font-weight: bold; cursor: pointer; overflow: hidden; position: relative; margin-bottom: 2px; transition: opacity 0.15s; }
+.event:hover { opacity: 0.85; filter: brightness(0.95); }
+.event-collecte { background: #d4e8f7; border-left: 3px solid #559FD7; color: #1a4a6e; }
+.event-bc { background: #e8f5d4; border-left: 3px solid #8CC740; color: #2d5a0e; }
+.event-contrat { background: #e8f0f7; border-left: 3px solid #29608A; color: #1f3d52; }
+.event-tache { background: #fff3cd; border-left: 3px solid #f0c040; color: #7a5c00; }
+.event-urgent { background: #fde8e8; border-left: 3px solid #e74c3c; color: #8b1c1c; }
+.event-time { font-size: 10px; opacity: 0.8; }
+
+/* VUE LISTE */
+.list-view { display: flex; flex-direction: column; gap: 8px; }
+.list-day-group { }
+.list-day-title { font-size: 13px; font-weight: bold; color: #29608A; padding: 8px 0 6px; border-bottom: 2px solid #8CC740; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.list-day-badge { background: #29608A; color: white; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+.list-event { background: white; border: 1px solid #dde1e5; border-radius: 8px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: all 0.15s; }
+.list-event:hover { border-color: #559FD7; background: #f8fafb; }
+.list-event-color { width: 4px; border-radius: 4px; align-self: stretch; flex-shrink: 0; }
+.list-event-body { flex: 1; }
+.list-event-title { font-size: 14px; font-weight: bold; color: #404041; margin-bottom: 4px; }
+.list-event-meta { font-size: 12px; color: #888; display: flex; gap: 12px; flex-wrap: wrap; }
+.list-event-meta span { display: flex; align-items: center; gap: 4px; }
+.list-event-agents { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.agent-chip { background: #e8f0f7; color: #29608A; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: bold; }
+.agent-chip.responsable { background: #eaf5d5; color: #3d7a14; }
+.list-event-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.badge { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: bold; }
+.badge-bc { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.badge-contrat { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.badge-tache { background: #fff3cd; color: #7a5c00; border: 1px solid #f0c040; }
+.badge-urgent { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+.badge-fait { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.btn-xs { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; border: 1px solid #dde1e5; background: white; font-family: Arial, sans-serif; }
+.btn-xs.green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-xs.blue { background: #29608A; color: white; border-color: #29608A; }
+
+/* MODAL */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: white; border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
+.modal-head { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
+.modal-head-blue { background: #29608A; }
+.modal-head-green { background: #3d7a14; }
+.modal-head-orange { background: #e67e22; }
+.modal-title { font-size: 15px; font-weight: bold; color: white; }
+.modal-close { color: white; font-size: 20px; cursor: pointer; opacity: 0.8; background: none; border: none; font-family: Arial, sans-serif; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid #dde1e5; display: flex; justify-content: flex-end; gap: 8px; background: #f8fafb; }
+.mfield { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.mfield label { font-size: 11px; font-weight: bold; color: #29608A; text-transform: uppercase; letter-spacing: 0.4px; }
+.mfield input, .mfield select, .mfield textarea { border: 1px solid #c8cfd8; border-radius: 6px; padding: 8px 11px; font-size: 14px; background: white; color: #404041; font-family: Arial, sans-serif; width: 100%; }
+.mfield input:focus, .mfield select:focus { outline: none; border-color: #559FD7; }
+.mg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.event-detail-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+.event-detail-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.event-detail-content { flex: 1; font-size: 13px; color: #404041; line-height: 1.5; }
+.event-detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+
+@media (max-width: 900px) { .plan-sidebar { display: none; } }
+</style>
+
+<script>
+(function() {
+  var role = localStorage.getItem('wastify_role') || '';
+  var allowed = ['manager', 'ops', 'agent_reporting', 'agent_collecte'];
+  if (!role) { window.location.href = 'index.html'; return; }
+  if (allowed.indexOf(role) === -1) {
+    if (role === 'agent_collecte' || role === 'agent_reporting') window.location.href = 'dashboard_agent.html';
+    else if (role === 'client' || role === 'partenaire') window.location.href = 'portail_client.html';
+    else window.location.href = 'dashboard_ops.html';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <a href="dashboard_ops.html" class="nav-link">&#8592; Dashboard</a>
+    <a href="bons_commande.html" class="nav-link">Bons de commande</a>
+    <div class="user-pill" id="user-pill">Ops</div>
+  </div>
+</div>
+
+<div class="page-bar">
+  <div class="page-title">&#128197; Planning Op&eacute;rations</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-green" onclick="ouvrirModalNouveau()">+ Nouvelle t&acirc;che</button>
+    <button class="btn btn-primary" onclick="ouvrirModalNouveau('bc')">+ Depuis BC</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="plan-sidebar">
+
+    <!-- MINI CALENDRIER -->
+    <div class="mini-cal">
+      <div class="mini-cal-head">
+        <span class="mini-cal-nav" onclick="miniCalNav(-1)">&#8249;</span>
+        <span class="mini-cal-title" id="mini-cal-title">Avril 2026</span>
+        <span class="mini-cal-nav" onclick="miniCalNav(1)">&#8250;</span>
+      </div>
+      <div class="mini-cal-grid" id="mini-cal-grid"></div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #dde1e5;">
+
+    <!-- FILTRES TYPE -->
+    <div class="sidebar-filters">
+      <div class="sf-title">Types d'&eacute;v&eacute;nements</div>
+      <div class="sf-item">
+        <input type="checkbox" id="f-bc" checked onchange="filtrerEvenements()">
+        <div class="sf-dot" style="background:#8CC740;"></div>
+        <label for="f-bc">Bons de commande</label>
+      </div>
+      <div class="sf-item">
+        <input type="checkbox" id="f-contrat" checked onchange="filtrerEvenements()">
+        <div class="sf-dot" style="background:#29608A;"></div>
+        <label for="f-contrat">Contrats r&eacute;currents</label>
+      </div>
+      <div class="sf-item">
+        <input type="checkbox" id="f-tache" checked onchange="filtrerEvenements()">
+        <div class="sf-dot" style="background:#f0c040;"></div>
+        <label for="f-tache">T&acirc;ches sp&eacute;cifiques</label>
+      </div>
+      <div class="sf-item">
+        <input type="checkbox" id="f-urgent" checked onchange="filtrerEvenements()">
+        <div class="sf-dot" style="background:#e74c3c;"></div>
+        <label for="f-urgent">Urgents</label>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #dde1e5;">
+
+    <!-- FILTRES AGENTS -->
+    <div class="sf-agents">
+      <div class="sf-title">Agents</div>
+      <div class="agent-filter-item">
+        <input type="checkbox" id="f-woulare" checked onchange="filtrerEvenements()">
+        <div class="agent-avatar-sm" style="background:#29608A;">IW</div>
+        <label for="f-woulare">I. WOULARE</label>
+      </div>
+      <div class="agent-filter-item">
+        <input type="checkbox" id="f-tapha" checked onchange="filtrerEvenements()">
+        <div class="agent-avatar-sm" style="background:#3d7a14;">TA</div>
+        <label for="f-tapha">Tapha</label>
+      </div>
+      <div class="agent-filter-item">
+        <input type="checkbox" id="f-adama" checked onchange="filtrerEvenements()">
+        <div class="agent-avatar-sm" style="background:#1a5276;">AN</div>
+        <label for="f-adama">ADAMA NGUER</label>
+      </div>
+      <div class="agent-filter-item">
+        <input type="checkbox" id="f-ahmed" checked onchange="filtrerEvenements()">
+        <div class="agent-avatar-sm" style="background:#7d3c98;">AD</div>
+        <label for="f-ahmed">Ahmed DIAGNE</label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="plan-main">
+
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="navCalendrier(-1)">&#8249;</button>
+        <button class="btn" onclick="allerAujourdhui()" style="font-size:12px;">Aujourd'hui</button>
+        <button class="cal-nav-btn" onclick="navCalendrier(1)">&#8250;</button>
+        <span class="cal-period" id="cal-period">Semaine du 6 au 12 avril 2026</span>
+      </div>
+      <div class="view-btns">
+        <button class="view-btn" id="vb-jour" onclick="setVue('jour',this)">Jour</button>
+        <button class="view-btn active" id="vb-semaine" onclick="setVue('semaine',this)">Semaine</button>
+        <button class="view-btn" id="vb-mois" onclick="setVue('mois',this)">Mois</button>
+        <button class="view-btn" id="vb-liste" onclick="setVue('liste',this)">Liste</button>
+      </div>
+    </div>
+
+    <div id="cal-container"></div>
+
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL ÉVÉNEMENT -->
+<div class="modal-overlay" id="modal-detail" style="display:none;" onclick="fermerModal('detail')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head" id="modal-detail-head" style="background:#29608A;">
+      <span class="modal-title" id="modal-detail-title">Détail</span>
+      <button class="modal-close" onclick="fermerModal('detail')">&#215;</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fermerModal('detail')">Fermer</button>
+      <button class="btn btn-green" id="modal-detail-bsd" onclick="creerBSDDepuisPlanning()">&#128196; Créer BSD</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOUVELLE TÂCHE -->
+<div class="modal-overlay" id="modal-nouveau" style="display:none;" onclick="fermerModal('nouveau')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head modal-head-green">
+      <span class="modal-title">Nouvelle t&acirc;che / &eacute;v&eacute;nement</span>
+      <button class="modal-close" onclick="fermerModal('nouveau')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="mfield">
+        <label>Type *</label>
+        <select id="new-type" onchange="toggleNewType()">
+          <option value="bc">Bon de commande (collecte)</option>
+          <option value="tache">Tâche spécifique</option>
+          <option value="contrat">Collecte récurrente (contrat)</option>
+        </select>
+      </div>
+      <div class="mfield">
+        <label>Titre / Description *</label>
+        <input type="text" id="new-titre" placeholder="ex: Collecte IDEX SA — DEEE">
+      </div>
+      <div id="new-bc-fields">
+        <div class="mfield">
+          <label>Client</label>
+          <select id="new-client">
+            <option value="">— Sélectionner —</option>
+            <option>TRANSPORT IBRAHIMA SAKHO</option>
+            <option>Orange Sénégal</option>
+            <option>Sonatel</option>
+            <option>EGMT</option>
+            <option>GMD</option>
+            <option>SENEAU</option>
+          </select>
+        </div>
+        <div class="mfield">
+          <label>Référence BC (Odoo)</label>
+          <select id="new-ref-bc">
+            <option value="">— Sélectionner un BC —</option>
+            <option>SO-2026-0145 — Sonatel — Destruction DD</option>
+            <option>SO-2026-0147 — EGMT — Collecte DEEE</option>
+          </select>
+        </div>
+      </div>
+      <div class="mg2">
+        <div class="mfield">
+          <label>Date *</label>
+          <input type="date" id="new-date">
+        </div>
+        <div class="mfield">
+          <label>Priorité</label>
+          <select id="new-priorite">
+            <option value="normale">Normale</option>
+            <option value="urgente">⚠️ Urgente</option>
+          </select>
+        </div>
+      </div>
+      <div class="mg2">
+        <div class="mfield">
+          <label>Heure début</label>
+          <input type="time" id="new-hdebut" value="08:00">
+        </div>
+        <div class="mfield">
+          <label>Heure fin</label>
+          <input type="time" id="new-hfin" value="12:00">
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Agents affectés</label>
+        <div style="display:flex;flex-direction:column;gap:6px;" id="new-agents-list">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="woulare" style="width:14px;height:14px;accent-color:#8CC740;"> Ibrahima WOULARE</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="tapha" style="width:14px;height:14px;accent-color:#8CC740;"> Tapha</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="adama" style="width:14px;height:14px;accent-color:#8CC740;"> ADAMA NGUER</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ahmed" style="width:14px;height:14px;accent-color:#8CC740;"> Ahmed DIAGNE</label>
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Notes</label>
+        <textarea id="new-notes" rows="2" placeholder="Instructions, contraintes..." style="resize:vertical;border:1px solid #c8cfd8;border-radius:6px;padding:8px 11px;font-size:13px;font-family:Arial,sans-serif;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fermerModal('nouveau')">Annuler</button>
+      <button class="btn btn-green" onclick="sauvegarderEvenement()">&#10003; Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DONNÉES
+// ============================================================
+var JOURS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+var MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+var today = new Date(2026, 3, 9); // 9 avril 2026
+var currentDate = new Date(today);
+var currentVue = 'semaine';
+var selectedEvent = null;
+
+var EVENEMENTS = [
+  { id:1, type:'bc', titre:'Collecte DEEE — Sonatel', client:'Sonatel', ref:'SO-2026-0145',
+    date:'2026-04-05', hdebut:'08:00', hfin:'11:00',
+    agents:['Ibrahima WOULARE (Responsable)','Tapha'],
+    priorite:'normale', statut:'planifie',
+    contact:'Moussa NDIAYE — 33 839 90 00',
+    acces:'Bâtiment B, 2ème étage', notes:'45 disques durs SSD et HDD' },
+  { id:2, type:'bc', titre:'Collecte DEEE — EGMT', client:'EGMT', ref:'SO-2026-0147',
+    date:'2026-04-08', hdebut:'10:00', hfin:'13:00',
+    agents:['Tapha (Responsable)','Ahmed DIAGNE'],
+    priorite:'urgente', statut:'planifie',
+    contact:'Omar SARR — 33 821 00 00',
+    acces:'', notes:'Pesée sur site impossible' },
+  { id:3, type:'contrat', titre:'Collecte mensuelle — Orange Sénégal', client:'Orange Sénégal', ref:'CONT-2026-003',
+    date:'2026-04-10', hdebut:'09:00', hfin:'12:00',
+    agents:['Ibrahima WOULARE (Responsable)'],
+    priorite:'normale', statut:'planifie',
+    contact:'Aminata FALL — 33 869 30 00',
+    acces:'Almadies, entrée principale', notes:'Fréquence mensuelle' },
+  { id:4, type:'tache', titre:'Réunion équipe opérations', client:'', ref:'',
+    date:'2026-04-09', hdebut:'08:30', hfin:'09:30',
+    agents:['Ibrahima WOULARE','Tapha','ADAMA NGUER','Ahmed DIAGNE'],
+    priorite:'normale', statut:'planifie',
+    contact:'', acces:'', notes:'Point hebdomadaire opérations' },
+  { id:5, type:'bc', titre:'Collecte archives — GMD', client:'GMD', ref:'SO-2026-0148',
+    date:'2026-04-14', hdebut:'08:00', hfin:'11:00',
+    agents:['ADAMA NGUER (Responsable)','Ibrahima WOULARE'],
+    priorite:'normale', statut:'planifie',
+    contact:'Contact GMD', acces:'', notes:'' },
+  { id:6, type:'contrat', titre:'Collecte hebdo — Transport I. Sakho', client:'Transport I. Sakho', ref:'CONT-2026-001',
+    date:'2026-04-15', hdebut:'07:30', hfin:'10:00',
+    agents:['Tapha (Responsable)'],
+    priorite:'normale', statut:'planifie',
+    contact:'Ibrahima SAKHO — 769295255', acces:'Route de Rufisque', notes:'Fréquence hebdomadaire' },
+  { id:7, type:'tache', titre:'Maintenance broyeur entrepôt', client:'', ref:'',
+    date:'2026-04-13', hdebut:'14:00', hfin:'17:00',
+    agents:['Ahmed DIAGNE'],
+    priorite:'normale', statut:'planifie',
+    contact:'', acces:'Entrepôt Diamniadio', notes:'Entretien préventif trimestriel' },
+  { id:8, type:'bc', titre:'Collecte DEEE — SENEAU', client:'SENEAU', ref:'SO-2026-0149',
+    date:'2026-04-16', hdebut:'09:00', hfin:'11:30',
+    agents:['Ibrahima WOULARE (Responsable)'],
+    priorite:'normale', statut:'planifie',
+    contact:'Contact SENEAU', acces:'Diamniadio', notes:'' },
+];
+
+var evenementsFiltres = EVENEMENTS.slice();
+
+// ============================================================
+// CALENDRIER
+// ============================================================
+function getDebutSemaine(d) {
+  var day = new Date(d);
+  var dow = day.getDay();
+  var diff = dow === 0 ? -6 : 1 - dow;
+  day.setDate(day.getDate() + diff);
+  day.setHours(0,0,0,0);
+  return day;
+}
+
+function formatDateKey(d) {
+  var pad = function(n){return String(n).padStart(2,'0');};
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+function navCalendrier(dir) {
+  if (currentVue === 'semaine') currentDate.setDate(currentDate.getDate() + dir*7);
+  else if (currentVue === 'mois') currentDate.setMonth(currentDate.getMonth() + dir);
+  else if (currentVue === 'jour') currentDate.setDate(currentDate.getDate() + dir);
+  else currentDate.setDate(currentDate.getDate() + dir*7);
+  renderCalendrier();
+}
+
+function allerAujourdhui() {
+  currentDate = new Date(today);
+  renderCalendrier();
+}
+
+function setVue(vue, btn) {
+  currentVue = vue;
+  document.querySelectorAll('.view-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderCalendrier();
+}
+
+function filtrerEvenements() {
+  var fTypes = {
+    bc: document.getElementById('f-bc').checked,
+    contrat: document.getElementById('f-contrat').checked,
+    tache: document.getElementById('f-tache').checked,
+  };
+  var fAgents = {
+    woulare: document.getElementById('f-woulare').checked,
+    tapha: document.getElementById('f-tapha').checked,
+    adama: document.getElementById('f-adama').checked,
+    ahmed: document.getElementById('f-ahmed').checked,
+  };
+  var urgentOnly = document.getElementById('f-urgent').checked;
+
+  evenementsFiltres = EVENEMENTS.filter(function(ev) {
+    var typeOk = fTypes[ev.type] !== false;
+    if (ev.priorite === 'urgente' && !urgentOnly) return false;
+    var agentOk = ev.agents.some(function(a) {
+      var al = a.toLowerCase();
+      if (al.includes('woulare') && fAgents.woulare) return true;
+      if (al.includes('tapha') && fAgents.tapha) return true;
+      if (al.includes('adama') || al.includes('nguer') && fAgents.adama) return true;
+      if (al.includes('ahmed') || al.includes('diagne') && fAgents.ahmed) return true;
+      return false;
+    });
+    return typeOk && agentOk;
+  });
+  renderCalendrier();
+}
+
+function renderCalendrier() {
+  var container = document.getElementById('cal-container');
+  if (currentVue === 'liste') renderListView(container);
+  else if (currentVue === 'semaine') renderSemaineView(container);
+  else if (currentVue === 'mois') renderMoisView(container);
+  else if (currentVue === 'jour') renderJourView(container);
+  renderMiniCal();
+}
+
+// ============================================================
+// VUE LISTE
+// ============================================================
+function renderListView(container) {
+  var pad = function(n){return String(n).padStart(2,'0');};
+  // Grouper par date
+  var grouped = {};
+  evenementsFiltres.forEach(function(ev) {
+    if (!grouped[ev.date]) grouped[ev.date] = [];
+    grouped[ev.date].push(ev);
+  });
+  var dates = Object.keys(grouped).sort();
+
+  var period = dates.length > 0 ?
+    formatDateFR(dates[0]) + ' — ' + formatDateFR(dates[dates.length-1]) :
+    'Aucun événement';
+  document.getElementById('cal-period').textContent = period;
+
+  if (dates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#888;padding:40px;background:white;border-radius:10px;border:1px solid #dde1e5;">Aucun événement pour les filtres sélectionnés.</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="list-view">' + dates.map(function(dateKey) {
+    var evs = grouped[dateKey];
+    var d = new Date(dateKey + 'T00:00:00');
+    var isToday = dateKey === formatDateKey(today);
+    var dateLabel = JOURS[d.getDay()] + ' ' + d.getDate() + ' ' + MOIS_NOMS[d.getMonth()] + ' ' + d.getFullYear();
+    return '<div class="list-day-group">' +
+      '<div class="list-day-title">' +
+        (isToday ? '<span style="background:#e74c3c;color:white;border-radius:4px;padding:1px 8px;font-size:11px;">Aujourd\'hui</span>' : '') +
+        dateLabel +
+        '<span class="list-day-badge">'+evs.length+'</span>' +
+      '</div>' +
+      evs.map(function(ev){ return renderListEvent(ev); }).join('') +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function renderListEvent(ev) {
+  var colors = {bc:'#8CC740', contrat:'#29608A', tache:'#f0c040', urgent:'#e74c3c'};
+  var color = ev.priorite === 'urgente' ? colors.urgent : colors[ev.type];
+  var badgeType = ev.priorite === 'urgente' ? '<span class="badge badge-urgent">&#9888; Urgent</span>' :
+    (ev.type === 'bc' ? '<span class="badge badge-bc">Bon de commande</span>' :
+    (ev.type === 'contrat' ? '<span class="badge badge-contrat">Contrat</span>' :
+    '<span class="badge badge-tache">T&acirc;che</span>'));
+  var agents = ev.agents.map(function(a,i){ return '<span class="agent-chip'+(i===0?' responsable':'')+'">'+(i===0?'&#9733; ':'')+a+'</span>'; }).join('');
+  return '<div class="list-event" onclick="ouvrirDetail('+ev.id+')">' +
+    '<div class="list-event-color" style="background:'+color+';"></div>' +
+    '<div class="list-event-body">' +
+      '<div class="list-event-title">'+ev.titre+'</div>' +
+      '<div class="list-event-meta">' +
+        '<span>&#128336; '+ev.hdebut+' — '+ev.hfin+'</span>' +
+        (ev.client ? '<span>&#127970; '+ev.client+'</span>' : '') +
+        (ev.ref ? '<span>&#128203; '+ev.ref+'</span>' : '') +
+      '</div>' +
+      '<div class="list-event-agents">'+agents+'</div>' +
+    '</div>' +
+    '<div class="list-event-actions">'+badgeType+
+      (ev.statut !== 'fait' && ev.type !== 'tache' ? '<button class="btn-xs green" onclick="event.stopPropagation();creerBSDDirect('+ev.id+')">+ BSD</button>' : '') +
+    '</div>' +
+    '</div>';
+}
+
+// ============================================================
+// VUE SEMAINE
+// ============================================================
+function renderSemaineView(container) {
+  var lundi = getDebutSemaine(currentDate);
+  var fin = new Date(lundi); fin.setDate(fin.getDate() + 6);
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('cal-period').textContent =
+    'Semaine du ' + lundi.getDate() + ' au ' + fin.getDate() + ' ' + MOIS_NOMS[fin.getMonth()] + ' ' + fin.getFullYear();
+
+  var heures = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+
+  var headerHTML = '<div class="week-header week-header-time"></div>';
+  var days = [];
+  for (var d = 0; d < 7; d++) {
+    var day = new Date(lundi); day.setDate(lundi.getDate() + d);
+    days.push(day);
+    var isToday = formatDateKey(day) === formatDateKey(today);
+    headerHTML += '<div class="week-header week-header-day">' +
+      '<div class="week-dow">'+JOURS[day.getDay()]+'</div>' +
+      (isToday ?
+        '<div class="week-date today">'+day.getDate()+'</div>' :
+        '<div class="week-date">'+day.getDate()+'</div>') +
+      '</div>';
+  }
+
+  var rowsHTML = '';
+  heures.forEach(function(h) {
+    rowsHTML += '<div class="week-time-cell">'+h+'</div>';
+    days.forEach(function(day) {
+      var dk = formatDateKey(day);
+      var isToday = dk === formatDateKey(today);
+      var evs = evenementsFiltres.filter(function(ev){ return ev.date === dk && ev.hdebut.substring(0,2) === h.substring(0,2); });
+      var evHTML = evs.map(function(ev){
+        var cls = ev.priorite==='urgente' ? 'event event-urgent' : 'event event-'+ev.type;
+        return '<div class="'+cls+'" onclick="ouvrirDetail('+ev.id+')">' +
+          '<div class="event-time">'+ev.hdebut+'</div>' +
+          ev.titre.substring(0,25)+(ev.titre.length>25?'...':'') +
+          '</div>';
+      }).join('');
+      rowsHTML += '<div class="week-day-cell'+(isToday?' today-col':'')+'">'+evHTML+'</div>';
+    });
+  });
+
+  container.innerHTML = '<div class="week-grid">' + headerHTML + rowsHTML + '</div>';
+}
+
+// ============================================================
+// VUE MOIS
+// ============================================================
+function renderMoisView(container) {
+  var year = currentDate.getFullYear();
+  var month = currentDate.getMonth();
+  document.getElementById('cal-period').textContent = MOIS_NOMS[month] + ' ' + year;
+
+  var firstDay = new Date(year, month, 1);
+  var lastDay = new Date(year, month + 1, 0);
+  var startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+  var html = '<div style="background:white;border-radius:10px;border:1px solid #dde1e5;overflow:hidden;">';
+  // Header jours
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f4f6f8;">';
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(function(j){
+    html += '<div style="padding:10px;text-align:center;font-size:11px;font-weight:bold;color:#888;border-bottom:1px solid #dde1e5;">'+j+'</div>';
+  });
+  html += '</div>';
+
+  // Jours
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);">';
+  for (var i = 0; i < startDow; i++) {
+    html += '<div style="border:1px solid #f4f6f8;min-height:80px;background:#fafafa;"></div>';
+  }
+  for (var d = 1; d <= lastDay.getDate(); d++) {
+    var dk = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isToday = dk === formatDateKey(today);
+    var evs = evenementsFiltres.filter(function(ev){ return ev.date === dk; });
+    var evHTML = evs.slice(0,2).map(function(ev){
+      var color = ev.priorite==='urgente'?'#e74c3c':(ev.type==='bc'?'#8CC740':(ev.type==='contrat'?'#29608A':'#f0c040'));
+      return '<div onclick="ouvrirDetail('+ev.id+')" style="background:'+color+'22;border-left:2px solid '+color+';border-radius:3px;padding:1px 5px;font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+ev.titre+'</div>';
+    }).join('');
+    if (evs.length > 2) evHTML += '<div style="font-size:10px;color:#888;padding-left:4px;">+' + (evs.length-2) + ' autres</div>';
+    html += '<div style="border:1px solid #f4f6f8;min-height:80px;padding:6px;'+(isToday?'background:#f0f7fd;':'')+'">' +
+      '<div style="font-size:13px;font-weight:bold;'+(isToday?'background:#29608A;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;':'')+'">' + d + '</div>' +
+      evHTML + '</div>';
+  }
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// ============================================================
+// VUE JOUR
+// ============================================================
+function renderJourView(container) {
+  var dk = formatDateKey(currentDate);
+  var d = currentDate;
+  document.getElementById('cal-period').textContent = JOURS[d.getDay()] + ' ' + d.getDate() + ' ' + MOIS_NOMS[d.getMonth()] + ' ' + d.getFullYear();
+  var evs = evenementsFiltres.filter(function(ev){ return ev.date === dk; });
+
+  if (evs.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#888;padding:40px;background:white;border-radius:10px;border:1px solid #dde1e5;">Aucun événement ce jour.</div>';
+    return;
+  }
+  container.innerHTML = '<div class="list-view">' + evs.map(function(ev){ return renderListEvent(ev); }).join('') + '</div>';
+}
+
+// ============================================================
+// MINI CALENDRIER
+// ============================================================
+var miniCalDate = new Date(today);
+
+function renderMiniCal() {
+  var year = miniCalDate.getFullYear();
+  var month = miniCalDate.getMonth();
+  document.getElementById('mini-cal-title').textContent = MOIS_NOMS[month] + ' ' + year;
+
+  var firstDay = new Date(year, month, 1);
+  var lastDay = new Date(year, month + 1, 0);
+  var startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+  var html = ['L','M','M','J','V','S','D'].map(function(j){
+    return '<div class="mini-cal-dow">'+j+'</div>';
+  }).join('');
+
+  for (var i = 0; i < startDow; i++) html += '<div></div>';
+  for (var d = 1; d <= lastDay.getDate(); d++) {
+    var dk = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isToday = dk === formatDateKey(today);
+    var hasEv = EVENEMENTS.some(function(ev){ return ev.date === dk; });
+    var cls = 'mini-cal-day' + (isToday?' today':'') + (hasEv&&!isToday?' has-event':'');
+    html += '<div class="'+cls+'" onclick="allerADate(\''+dk+'\')" title="'+dk+'">'+d+'</div>';
+  }
+  document.getElementById('mini-cal-grid').innerHTML = html;
+}
+
+function miniCalNav(dir) {
+  miniCalDate.setMonth(miniCalDate.getMonth() + dir);
+  renderMiniCal();
+}
+
+function allerADate(dk) {
+  currentDate = new Date(dk + 'T00:00:00');
+  setVue('jour', document.getElementById('vb-jour'));
+}
+
+function formatDateFR(dk) {
+  var d = new Date(dk + 'T00:00:00');
+  return d.getDate() + ' ' + MOIS_NOMS[d.getMonth()].substring(0,3) + ' ' + d.getFullYear();
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function ouvrirDetail(id) {
+  var ev = EVENEMENTS.find(function(e){ return e.id === id; });
+  if (!ev) return;
+  selectedEvent = ev;
+
+  var colors = {bc:'#3d7a14', contrat:'#29608A', tache:'#e67e22'};
+  var color = ev.priorite === 'urgente' ? '#b03a2e' : (colors[ev.type] || '#29608A');
+  document.getElementById('modal-detail-head').style.background = color;
+  document.getElementById('modal-detail-title').textContent = ev.titre;
+
+  var agents = ev.agents.map(function(a,i){
+    return '<span style="background:'+(i===0?'#eaf5d5':'#e8f0f7')+';color:'+(i===0?'#3d7a14':'#29608A')+';border-radius:20px;padding:2px 10px;font-size:12px;font-weight:bold;margin:2px;display:inline-block;">'+(i===0?'★ ':'')+a+'</span>';
+  }).join('');
+
+  var typeLabel = ev.type === 'bc' ? 'Bon de commande' : (ev.type === 'contrat' ? 'Contrat récurrent' : 'Tâche spécifique');
+  var prioriteLabel = ev.priorite === 'urgente' ? '<span style="background:#fdf0ef;color:#b03a2e;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:bold;">⚠️ Urgente</span>' : '<span style="background:#eaf5d5;color:#3d7a14;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:bold;">Normale</span>';
+
+  document.getElementById('modal-detail-body').innerHTML =
+    '<div class="event-detail-row"><div class="event-detail-icon">🏷️</div><div class="event-detail-content"><div class="event-detail-label">Type</div>' + typeLabel + ' — ' + prioriteLabel + '</div></div>' +
+    (ev.client ? '<div class="event-detail-row"><div class="event-detail-icon">🏢</div><div class="event-detail-content"><div class="event-detail-label">Client</div>' + ev.client + '</div></div>' : '') +
+    (ev.ref ? '<div class="event-detail-row"><div class="event-detail-icon">📋</div><div class="event-detail-content"><div class="event-detail-label">Référence</div>' + ev.ref + '</div></div>' : '') +
+    '<div class="event-detail-row"><div class="event-detail-icon">🕐</div><div class="event-detail-content"><div class="event-detail-label">Créneau</div>' + formatDateFR(ev.date) + ' — ' + ev.hdebut + ' à ' + ev.hfin + '</div></div>' +
+    '<div class="event-detail-row"><div class="event-detail-icon">👥</div><div class="event-detail-content"><div class="event-detail-label">Agents</div>' + agents + '</div></div>' +
+    (ev.contact ? '<div class="event-detail-row"><div class="event-detail-icon">📞</div><div class="event-detail-content"><div class="event-detail-label">Contact sur place</div>' + ev.contact + '</div></div>' : '') +
+    (ev.acces ? '<div class="event-detail-row"><div class="event-detail-icon">📍</div><div class="event-detail-content"><div class="event-detail-label">Accès</div>' + ev.acces + '</div></div>' : '') +
+    (ev.notes ? '<div class="event-detail-row"><div class="event-detail-icon">📝</div><div class="event-detail-content"><div class="event-detail-label">Notes</div>' + ev.notes + '</div></div>' : '');
+
+  var btnBSD = document.getElementById('modal-detail-bsd');
+  btnBSD.style.display = (ev.type !== 'tache') ? 'inline-block' : 'none';
+
+  document.getElementById('modal-detail').style.display = 'flex';
+}
+
+function ouvrirModalNouveau(type) {
+  var now = new Date(today);
+  var pad = function(n){return String(n).padStart(2,'0');};
+  document.getElementById('new-date').value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  if (type) document.getElementById('new-type').value = type;
+  toggleNewType();
+  document.getElementById('modal-nouveau').style.display = 'flex';
+}
+
+function toggleNewType() {
+  var type = document.getElementById('new-type').value;
+  document.getElementById('new-bc-fields').style.display = (type === 'tache') ? 'none' : 'block';
+}
+
+function fermerModal(id) {
+  document.getElementById('modal-'+id).style.display = 'none';
+}
+
+function sauvegarderEvenement() {
+  var titre = document.getElementById('new-titre').value.trim();
+  var date = document.getElementById('new-date').value;
+  if (!titre || !date) { alert('Titre et date sont obligatoires.'); return; }
+
+  var agents = [];
+  document.querySelectorAll('#new-agents-list input:checked').forEach(function(cb, i) {
+    var nom = cb.closest('label').textContent.trim();
+    agents.push(nom + (i === 0 ? ' (Responsable)' : ''));
+  });
+
+  var newEv = {
+    id: EVENEMENTS.length + 1,
+    type: document.getElementById('new-type').value,
+    titre: titre,
+    client: (document.getElementById('new-client')||{}).value || '',
+    ref: (document.getElementById('new-ref-bc')||{}).value || '',
+    date: date,
+    hdebut: document.getElementById('new-hdebut').value,
+    hfin: document.getElementById('new-hfin').value,
+    agents: agents.length > 0 ? agents : ['Non assigné'],
+    priorite: document.getElementById('new-priorite').value,
+    statut: 'planifie',
+    contact: '', acces: '',
+    notes: document.getElementById('new-notes').value
+  };
+
+  EVENEMENTS.push(newEv);
+  evenementsFiltres = EVENEMENTS.slice();
+  fermerModal('nouveau');
+  renderCalendrier();
+  alert('Événement "' + titre + '" ajouté au planning !');
+}
+
+function creerBSDDepuisPlanning() {
+  if (!selectedEvent) return;
+  var bc = { ref: selectedEvent.ref || 'PLAN-'+selectedEvent.id, client: selectedEvent.client,
+    service: '', date: selectedEvent.date.split('-').reverse().join('/'),
+    heureDebut: selectedEvent.hdebut, heureFin: selectedEvent.hfin,
+    agents: selectedEvent.agents, contact: selectedEvent.contact,
+    acces: selectedEvent.acces, notes: selectedEvent.notes, articles:[] };
+  localStorage.setItem('wastify_bc', JSON.stringify(bc));
+  fermerModal('detail');
+  alert('Redirection vers le BSD pré-rempli...');
+  window.location.href = 'bsd.html';
+}
+
+function creerBSDDirect(id) {
+  var ev = EVENEMENTS.find(function(e){ return e.id === id; });
+  if (!ev) return;
+  selectedEvent = ev;
+  creerBSDDepuisPlanning();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = function() {
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  document.getElementById('user-pill').textContent = user.split(' ')[0];
+  renderCalendrier();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wastify — Tableau de bord Chargée des Opérations</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f6f8; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #404041; }
+
+/* TOPBAR */
+.topbar { background: #29608A; padding: 0 20px; height: 58px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #8CC740; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-title { color: white; font-size: 15px; font-weight: bold; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.user-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: white; }
+.notif-bell { position: relative; cursor: pointer; }
+.notif-bell svg { width: 22px; height: 22px; fill: white; opacity: 0.85; }
+.notif-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; border: 2px solid #29608A; }
+
+/* NAV SIDEBAR */
+.layout { display: flex; min-height: calc(100vh - 58px); }
+.sidebar { width: 220px; background: #1f3d52; flex-shrink: 0; padding: 16px 0; position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; }
+.nav-section { font-size: 10px; font-weight: bold; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; padding: 16px 20px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: rgba(255,255,255,0.75); font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+.nav-item.active { background: rgba(140,199,64,0.2); color: #8CC740; border-left: 3px solid #8CC740; }
+.nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: #e74c3c; color: white; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: bold; }
+.nav-badge.green { background: #8CC740; }
+
+/* MAIN CONTENT */
+.main { flex: 1; padding: 20px 24px; overflow-x: hidden; }
+
+/* PAGE HEADER */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.page-title { font-size: 20px; font-weight: bold; color: #29608A; }
+.page-subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+.header-actions { display: flex; gap: 8px; }
+
+/* FILTRES DATE */
+.filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #888; font-family: Arial, sans-serif; }
+.filter-btn.active { background: #29608A; color: white; border-color: #29608A; }
+.filter-btn:hover { border-color: #559FD7; color: #559FD7; }
+
+/* MÉTRIQUES */
+.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.metric-card { background: white; border-radius: 10px; border: 1px solid #dde1e5; padding: 16px 18px; position: relative; overflow: hidden; }
+.metric-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+.metric-card.blue::before { background: #559FD7; }
+.metric-card.green::before { background: #8CC740; }
+.metric-card.orange::before { background: #e67e22; }
+.metric-card.red::before { background: #e74c3c; }
+.metric-card.teal::before { background: #0e6655; }
+.metric-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.metric-value { font-size: 28px; font-weight: bold; color: #29608A; line-height: 1; }
+.metric-unit { font-size: 13px; color: #888; font-weight: normal; }
+.metric-trend { font-size: 12px; margin-top: 6px; }
+.trend-up { color: #8CC740; }
+.trend-down { color: #e74c3c; }
+.metric-icon { position: absolute; top: 14px; right: 14px; font-size: 22px; opacity: 0.15; }
+
+/* ALERTES URGENTES */
+.alerts-section { margin-bottom: 20px; }
+.alert-card { display: flex; align-items: center; gap: 12px; background: white; border-radius: 8px; border: 1px solid #dde1e5; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.alert-card:hover { border-color: #559FD7; }
+.alert-card.urgent { border-left: 4px solid #e74c3c; }
+.alert-card.warning { border-left: 4px solid #f0c040; }
+.alert-card.info { border-left: 4px solid #559FD7; }
+.alert-icon { font-size: 20px; flex-shrink: 0; }
+.alert-content { flex: 1; }
+.alert-title { font-size: 13px; font-weight: bold; color: #404041; }
+.alert-desc { font-size: 12px; color: #888; margin-top: 2px; }
+.alert-time { font-size: 11px; color: #888; white-space: nowrap; }
+.alert-action { font-size: 12px; color: #559FD7; font-weight: bold; white-space: nowrap; cursor: pointer; }
+
+/* GRILLE PRINCIPALE */
+.main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.main-grid.three { grid-template-columns: 2fr 1fr; }
+
+/* CARDS */
+.card { background: white; border-radius: 10px; border: 1px solid #dde1e5; overflow: hidden; }
+.card-head { padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dde1e5; }
+.card-head-title { font-size: 14px; font-weight: bold; color: #29608A; display: flex; align-items: center; gap: 8px; }
+.card-head-action { font-size: 12px; color: #559FD7; cursor: pointer; font-weight: bold; }
+.card-body { padding: 16px; }
+
+/* TABLE LISTE BSD/BLD */
+.list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list-table th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: bold; color: #29608A; border-bottom: 1px solid #dde1e5; text-transform: uppercase; white-space: nowrap; background: #f4f6f8; }
+.list-table td { padding: 9px 10px; border-bottom: 1px solid #f4f6f8; color: #404041; }
+.list-table tr:hover td { background: #f8fafb; }
+.list-table tr:last-child td { border-bottom: none; }
+
+/* BADGES STATUT */
+.badge { display: inline-block; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+.badge-brouillon { background: #f4f6f8; color: #888; border: 1px solid #dde1e5; }
+.badge-pret { background: #e8f0f7; color: #29608A; border: 1px solid #559FD7; }
+.badge-fait { background: #eaf5d5; color: #3d7a14; border: 1px solid #8CC740; }
+.badge-annule { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+.badge-urgent { background: #fdf0ef; color: #b03a2e; border: 1px solid #e74c3c; }
+.badge-attente { background: #fff3cd; color: #7a5c00; border: 1px solid #f0c040; }
+
+/* COMMENTAIRES EN ATTENTE */
+.comment-item { padding: 12px 0; border-bottom: 1px solid #f4f6f8; }
+.comment-item:last-child { border-bottom: none; }
+.comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.comment-bsd { font-size: 12px; font-weight: bold; color: #559FD7; }
+.comment-type { font-size: 11px; color: #7a5c00; background: #fff3cd; border: 1px solid #f0c040; border-radius: 10px; padding: 1px 8px; }
+.comment-agent { font-size: 11px; color: #888; }
+.comment-time { font-size: 11px; color: #888; margin-left: auto; }
+.comment-text { font-size: 13px; color: #404041; line-height: 1.5; margin-bottom: 8px; }
+.comment-actions { display: flex; gap: 6px; }
+.btn-sm { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #dde1e5; background: white; color: #404041; font-family: Arial, sans-serif; }
+.btn-sm:hover { opacity: 0.85; }
+.btn-sm.green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn-sm.blue { background: #29608A; color: white; border-color: #29608A; }
+.btn-sm.red { color: #b03a2e; border-color: #b03a2e; }
+
+/* MINI STATS COLLECTE */
+.mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini-stat { background: #f4f6f8; border-radius: 8px; padding: 12px; text-align: center; }
+.mini-stat-val { font-size: 22px; font-weight: bold; color: #29608A; }
+.mini-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* CHART SIMULÉ */
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 0 4px; }
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar { width: 100%; border-radius: 4px 4px 0 0; transition: opacity 0.2s; cursor: pointer; }
+.bar:hover { opacity: 0.8; }
+.bar-label { font-size: 10px; color: #888; white-space: nowrap; }
+.bar-val { font-size: 10px; color: #29608A; font-weight: bold; }
+.chart-legend { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ACTIVITÉS RÉCENTES */
+.activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f4f6f8; align-items: flex-start; }
+.activity-item:last-child { border-bottom: none; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.activity-content { flex: 1; }
+.activity-text { font-size: 13px; color: #404041; line-height: 1.4; }
+.activity-text strong { color: #29608A; }
+.activity-time { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* QUICK ACTIONS */
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quick-btn { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; border: 1px solid #dde1e5; background: white; cursor: pointer; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; color: #404041; transition: all 0.15s; text-align: left; }
+.quick-btn:hover { border-color: #559FD7; background: #f0f7fd; color: #29608A; }
+.quick-btn .qb-icon { font-size: 20px; flex-shrink: 0; }
+.quick-btn .qb-label { font-size: 13px; font-weight: bold; }
+.quick-btn .qb-sub { font-size: 11px; color: #888; font-weight: normal; margin-top: 1px; }
+
+/* DONUT SIMULÉ */
+.donut-wrap { display: flex; align-items: center; gap: 16px; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { flex: 1; }
+.donut-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.donut-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.donut-name { flex: 1; color: #404041; }
+.donut-pct { font-weight: bold; color: #29608A; }
+
+/* BOUTON PRINCIPAL */
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid #dde1e5; background: white; color: #404041; }
+.btn-primary { background: #29608A; color: white; border-color: #29608A; }
+.btn-green { background: #8CC740; color: white; border-color: #8CC740; }
+.btn:hover { opacity: 0.85; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .main-grid, .main-grid.three { grid-template-columns: 1fr; }
+}
+@media (max-width: 550px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+}
+</style>
+  <link rel="stylesheet" href="assets/settic.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="44" height="44" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="48" r="33" fill="#559FD7"/>
+      <path d="M50 15 C70 15 82 28 82 44 L75 44 C75 32 64 22 50 22 C44 22 38 24 34 27 L40 20 L30 14 L44 8 L44 20 C46 19 48 19 50 19 Z" fill="#8CC740"/>
+      <path d="M18 55 C15 42 22 30 32 24 L36 30 C28 35 23 44 25 55 C26 60 29 65 33 68 L24 68 L20 80 L12 67 L23 62 C21 60 19 58 18 55 Z" fill="#8CC740"/>
+      <path d="M82 55 C80 68 70 76 58 78 L58 85 L46 80 L58 72 L58 79 C68 77 76 70 78 59 C79 54 78 49 75 45 L82 45 C85 48 83 52 82 55 Z" fill="#8CC740"/>
+      <circle cx="50" cy="48" r="16" fill="none" stroke="white" stroke-width="4.5" stroke-dasharray="70 30" stroke-dashoffset="-10"/>
+      <line x1="50" y1="32" x2="50" y2="46" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+      <text x="50" y="103" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="bold"><tspan fill="#8CC740">Set</tspan><tspan fill="#559FD7">TIC</tspan></text>
+    </svg>
+    <span class="topbar-title">Wastify</span>
+  </div>
+  <div class="topbar-right">
+    <div class="notif-bell" onclick="toggleNotifs()">
+      <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      <div class="notif-dot"></div>
+    </div>
+    <div class="user-pill">Charg&eacute;e des op&eacute;rations</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="nav-section">Tableau de bord</div>
+    <div class="nav-item active">
+      <span class="nav-icon">&#9632;</span> Vue d'ensemble
+    </div>
+
+    <div class="nav-section">Traçabilité</div>
+    <a href="bons_commande.html" class="nav-item">
+      <span class="nav-icon">&#128203;</span> BC &amp; Contrats
+    </a>
+    <a href="bsd.html" class="nav-item">
+      <span class="nav-icon">&#128196;</span> BSD
+      <span class="nav-badge">3</span>
+    </a>
+    <a href="bld.html" class="nav-item">
+      <span class="nav-icon">&#128666;</span> BLD
+      <span class="nav-badge green">2</span>
+    </a>
+    <a href="decomposition.html" class="nav-item">
+      <span class="nav-icon">&#9881;</span> D&eacute;composition
+    </a>
+
+    <div class="nav-section">Validation</div>
+    <div class="nav-item" onclick="scrollToSection('comments')">
+      <span class="nav-icon">&#128172;</span> Commentaires
+      <span class="nav-badge">4</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">&#128233;</span> Journal externe
+      <span class="nav-badge">2</span>
+    </div>
+
+        <div class="nav-section">Planification</div>
+    <a href="planning.html" class="nav-item">
+      <span class="nav-icon">&#128197;</span> Planning op&eacute;rations
+    </a>
+    <div class="nav-section">Rapports</div>
+    <a href="rapport_collecte.html" class="nav-item">
+      <span class="nav-icon">&#128202;</span> Rapport collecte
+    </a>
+    <a href="rapport_listing.html" class="nav-item">
+      <span class="nav-icon">&#128203;</span> Rapport listing
+    </a>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- EN-TÊTE PAGE -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Tableau de bord op&eacute;rationnel</div>
+        <div class="page-subtitle">Lundi 30 mars 2026 &mdash; Semaine 14</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="window.location.href='bsd.html'">+ Nouveau BSD</button>
+        <button class="btn btn-green" onclick="window.location.href='bld.html'">+ Nouveau BLD</button>
+      </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="filter-bar">
+      <span style="font-size:12px;color:#888;font-weight:bold;">P&eacute;riode :</span>
+      <button class="filter-btn active" onclick="setFilter(this,'today')">Aujourd'hui</button>
+      <button class="filter-btn" onclick="setFilter(this,'week')">Cette semaine</button>
+      <button class="filter-btn" onclick="setFilter(this,'month')">Ce mois</button>
+      <button class="filter-btn" onclick="setFilter(this,'quarter')">Ce trimestre</button>
+    </div>
+
+    <!-- MÉTRIQUES PRINCIPALES -->
+    <div class="metrics-grid">
+      <div class="metric-card blue">
+        <div class="metric-icon">&#128196;</div>
+        <div class="metric-label">BSD ce mois</div>
+        <div class="metric-value">24 <span class="metric-unit">BSD</span></div>
+        <div class="metric-trend trend-up">&#8593; +6 vs mois dernier</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">&#9881;</div>
+        <div class="metric-label">Tonnage collect&eacute;</div>
+        <div class="metric-value">3,2 <span class="metric-unit">t</span></div>
+        <div class="metric-trend trend-up">&#8593; +0,4t vs mois dernier</div>
+      </div>
+      <div class="metric-card orange">
+        <div class="metric-icon">&#128666;</div>
+        <div class="metric-label">BLD en attente</div>
+        <div class="metric-value">5 <span class="metric-unit">BLD</span></div>
+        <div class="metric-trend" style="color:#888;">dont 2 urgents</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-icon">&#128172;</div>
+        <div class="metric-label">Commentaires &agrave; traiter</div>
+        <div class="metric-value">4 <span class="metric-unit"></span></div>
+        <div class="metric-trend trend-down">&#9888; Action requise</div>
+      </div>
+    </div>
+
+    <!-- ALERTES URGENTES -->
+    <div class="alerts-section" id="alerts">
+      <div style="font-size:13px;font-weight:bold;color:#29608A;margin-bottom:10px;">&#9888; Actions urgentes</div>
+
+      <div class="alert-card urgent">
+        <div class="alert-icon">&#128172;</div>
+        <div class="alert-content">
+          <div class="alert-title">4 commentaires d'agents en attente de validation</div>
+          <div class="alert-desc">BSD 05000 (Orange Sénégal), BSD 04998 (Orange), BSD 04995 (Sonatel)... &mdash; dont 2 &eacute;carts de poids</div>
+        </div>
+        <div class="alert-time">Aujourd'hui</div>
+        <div class="alert-action" onclick="scrollToSection('comments')">Traiter &#8594;</div>
+      </div>
+
+      <div class="alert-card warning">
+        <div class="alert-icon">&#128666;</div>
+        <div class="alert-content">
+          <div class="alert-title">BLD DIA/BLD/2026/01987 — en attente de confirmation</div>
+          <div class="alert-desc">Sonatel &mdash; 245 kg Papier/Carton &mdash; Cr&eacute;&eacute; il y a 3 jours</div>
+        </div>
+        <div class="alert-time">il y a 3j</div>
+        <div class="alert-action" onclick="window.location.href='bld.html'">Ouvrir &#8594;</div>
+      </div>
+
+      <div class="alert-card info">
+        <div class="alert-icon">&#128233;</div>
+        <div class="alert-content">
+          <div class="alert-title">2 messages clients sans r&eacute;ponse</div>
+          <div class="alert-desc">Transport Ibrahima Sakho (BSD 04084) — EGMT (BSD 04991)</div>
+        </div>
+        <div class="alert-time">hier</div>
+        <div class="alert-action">R&eacute;pondre &#8594;</div>
+      </div>
+    </div>
+
+    <!-- GRILLE PRINCIPALE -->
+    <div class="main-grid three">
+
+      <!-- BSD RÉCENTS -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">&#128196; BSD r&eacute;cents</div>
+          <div class="card-head-action" onclick="window.location.href='bsd.html'">Voir tout</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="list-table">
+            <thead><tr>
+              <th>R&eacute;f&eacute;rence</th>
+              <th>Client</th>
+              <th>Date</th>
+              <th>Poids</th>
+              <th>Statut</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">05000</td>
+                <td>Orange Sénégal</td>
+                <td>27/03</td>
+                <td>75,3 kg</td>
+                <td><span class="badge badge-pret">Pr&ecirc;t</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">04999</td>
+                <td>Transport I.S.</td>
+                <td>26/03</td>
+                <td>120 kg</td>
+                <td><span class="badge badge-fait">Fait</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">04998</td>
+                <td>Orange S&eacute;n&eacute;gal</td>
+                <td>25/03</td>
+                <td>88 kg</td>
+                <td><span class="badge badge-attente">&#128172; Commentaire</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">04997</td>
+                <td>Sonatel</td>
+                <td>24/03</td>
+                <td>210 kg</td>
+                <td><span class="badge badge-fait">Fait</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">04996</td>
+                <td>EGMT</td>
+                <td>23/03</td>
+                <td>55 kg</td>
+                <td><span class="badge badge-brouillon">Brouillon</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COLONNE DROITE -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- ACTIONS RAPIDES -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-title">&#9889; Actions rapides</div>
+          </div>
+          <div class="card-body">
+            <div class="quick-actions">
+              <button class="quick-btn" onclick="window.location.href='bsd.html'">
+                <span class="qb-icon">&#128196;</span>
+                <div><div class="qb-label">Nouveau BSD</div><div class="qb-sub">Saisie collecte</div></div>
+              </button>
+              <button class="quick-btn" onclick="window.location.href='bld.html'">
+                <span class="qb-icon">&#128666;</span>
+                <div><div class="qb-label">Nouveau BLD</div><div class="qb-sub">Livraison</div></div>
+              </button>
+              <button class="quick-btn" onclick="window.location.href='decomposition.html'">
+                <span class="qb-icon">&#9881;</span>
+                <div><div class="qb-label">D&eacute;composition</div><div class="qb-sub">Rapport tri</div></div>
+              </button>
+              <button class="quick-btn">
+                <span class="qb-icon">&#128202;</span>
+                <div><div class="qb-label">Exporter</div><div class="qb-sub">Rapport Excel</div></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RÉPARTITION DÉCHETS -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-title">&#9685; R&eacute;partition types</div>
+            <div class="card-head-action">Ce mois</div>
+          </div>
+          <div class="card-body">
+            <div class="donut-wrap">
+              <svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90">
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#dde1e5" stroke-width="14"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#559FD7" stroke-width="14" stroke-dasharray="88 132" stroke-dashoffset="0" transform="rotate(-90 45 45)"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#8CC740" stroke-width="14" stroke-dasharray="53 167" stroke-dashoffset="-88" transform="rotate(-90 45 45)"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#e67e22" stroke-width="14" stroke-dasharray="33 187" stroke-dashoffset="-141" transform="rotate(-90 45 45)"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#29608A" stroke-width="14" stroke-dasharray="26 194" stroke-dashoffset="-174" transform="rotate(-90 45 45)"/>
+                <text x="45" y="49" text-anchor="middle" font-size="13" font-weight="bold" fill="#29608A" font-family="Arial">3,2t</text>
+              </svg>
+              <div class="donut-legend">
+                <div class="donut-item"><div class="donut-color" style="background:#559FD7"></div><span class="donut-name">DEEE</span><span class="donut-pct">40%</span></div>
+                <div class="donut-item"><div class="donut-color" style="background:#8CC740"></div><span class="donut-name">M&eacute;taux</span><span class="donut-pct">24%</span></div>
+                <div class="donut-item"><div class="donut-color" style="background:#e67e22"></div><span class="donut-name">Plastique</span><span class="donut-pct">15%</span></div>
+                <div class="donut-item"><div class="donut-color" style="background:#29608A"></div><span class="donut-name">Papier</span><span class="donut-pct">12%</span></div>
+                <div class="donut-item"><div class="donut-color" style="background:#dde1e5"></div><span class="donut-name">Autres</span><span class="donut-pct">9%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GRAPHIQUE COLLECTES -->
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">&#128202; Collectes par semaine (kg)</div>
+          <div class="card-head-action">Ce mois</div>
+        </div>
+        <div class="card-body">
+          <div class="bar-chart">
+            <div class="bar-group">
+              <div class="bar-val">680</div>
+              <div class="bar" style="height:68px;background:#559FD7;"></div>
+              <div class="bar-label">S11</div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-val">820</div>
+              <div class="bar" style="height:82px;background:#559FD7;"></div>
+              <div class="bar-label">S12</div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-val">750</div>
+              <div class="bar" style="height:75px;background:#559FD7;"></div>
+              <div class="bar-label">S13</div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-val">940</div>
+              <div class="bar" style="height:94px;background:#8CC740;"></div>
+              <div class="bar-label">S14 &#9650;</div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#559FD7"></div>Semaines pass&eacute;es</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#8CC740"></div>Semaine en cours</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLD EN COURS -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">&#128666; BLD en cours</div>
+          <div class="card-head-action" onclick="window.location.href='bld.html'">Voir tout</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="list-table">
+            <thead><tr>
+              <th>R&eacute;f&eacute;rence</th>
+              <th>Partenaire</th>
+              <th>Poids</th>
+              <th>Statut</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">02000</td>
+                <td>Orange Sénégal</td>
+                <td>245 kg</td>
+                <td><span class="badge badge-attente">En attente</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">01999</td>
+                <td>RecyclEco</td>
+                <td>180 kg</td>
+                <td><span class="badge badge-pret">Confirm&eacute;</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">01998</td>
+                <td>SOTREC</td>
+                <td>320 kg</td>
+                <td><span class="badge badge-fait">Fait</span></td>
+              </tr>
+              <tr>
+                <td style="color:#559FD7;font-weight:bold;">01997</td>
+                <td>Orange Sénégal</td>
+                <td>95 kg</td>
+                <td><span class="badge badge-urgent">&#9888; Urgent</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMENTAIRES À VALIDER -->
+    <div class="card" id="comments" style="margin-bottom:20px;">
+      <div class="card-head">
+        <div class="card-head-title">&#128172; Commentaires agents &agrave; valider <span style="background:#e74c3c;color:white;border-radius:10px;padding:1px 8px;font-size:12px;margin-left:6px;">4</span></div>
+        <div class="card-head-action">Tout marquer trait&eacute;</div>
+      </div>
+      <div class="card-body">
+
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-bsd">BSD DIA/BSD/2026/05000</span>
+            <span class="comment-type">&#9888; &Eacute;cart de poids</span>
+            <span class="comment-agent">Ibrahima WOULARE</span>
+            <span class="comment-time">Aujourd'hui 10h14</span>
+          </div>
+          <div class="comment-text">Le poids annonc&eacute; par le client &eacute;tait de 90 kg. &Agrave; la pes&eacute;e&nbsp;: 75,3 kg. Le client a &eacute;t&eacute; inform&eacute; sur place.</div>
+          <div class="comment-actions">
+            <button class="btn-sm green" onclick="validerComment(this)">&#10003; Valider &amp; envoyer au client</button>
+            <button class="btn-sm blue" onclick="editerComment(this)">&#9998; Modifier</button>
+            <button class="btn-sm red" onclick="refuserComment(this)">Refuser</button>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-bsd">BSD DIA/BSD/2026/04998</span>
+            <span class="comment-type">&#9888; Refus client</span>
+            <span class="comment-agent">Ahmed DIAGNE</span>
+            <span class="comment-time">Hier 15h32</span>
+          </div>
+          <div class="comment-text">Le client a refus&eacute; une partie du chargement (cartouches vides). Motif&nbsp;: cartouches non conformes au contrat. 12 unit&eacute;s retourn&eacute;es.</div>
+          <div class="comment-actions">
+            <button class="btn-sm green" onclick="validerComment(this)">&#10003; Valider &amp; envoyer au client</button>
+            <button class="btn-sm blue" onclick="editerComment(this)">&#9998; Modifier</button>
+            <button class="btn-sm red" onclick="refuserComment(this)">Refuser</button>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-bsd">BSD DIA/BSD/2026/04995</span>
+            <span class="comment-type">V&eacute;hicule en panne</span>
+            <span class="comment-agent">Ibrahima WOULARE</span>
+            <span class="comment-time">Hier 09h05</span>
+          </div>
+          <div class="comment-text">Panne v&eacute;hicule AA-927-SZ en cours de route. Collecte retard&eacute;e de 2h. Client inform&eacute; t&eacute;l&eacute;phoniquement. Collecte finalis&eacute;e &agrave; 13h30.</div>
+          <div class="comment-actions">
+            <button class="btn-sm green" onclick="validerComment(this)">&#10003; Valider &amp; envoyer au client</button>
+            <button class="btn-sm blue" onclick="editerComment(this)">&#9998; Modifier</button>
+            <button class="btn-sm red" onclick="refuserComment(this)">Refuser</button>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-bsd">BSD DIA/BSD/2026/04991</span>
+            <span class="comment-type">Note interne</span>
+            <span class="comment-agent">Ahmed DIAGNE</span>
+            <span class="comment-time">26/03 11h20</span>
+          </div>
+          <div class="comment-text">Client EGMT demande un certificat de d&eacute;struction pour les disques durs collect&eacute;s. &Agrave; pr&eacute;voir avec la Charg&eacute;e QHSE.</div>
+          <div class="comment-actions">
+            <button class="btn-sm green" onclick="validerComment(this)">&#10003; Valider &amp; envoyer au client</button>
+            <button class="btn-sm blue" onclick="editerComment(this)">&#9998; Modifier</button>
+            <button class="btn-sm red" onclick="refuserComment(this)">Refuser</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ACTIVITÉS RÉCENTES -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-head">
+        <div class="card-head-title">&#128336; Activit&eacute;s r&eacute;centes</div>
+        <div class="card-head-action">Voir tout</div>
+      </div>
+      <div class="card-body">
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#8CC740;"></div>
+          <div class="activity-content">
+            <div class="activity-text"><strong>BSD DIA/BSD/2026/05000</strong> valid&eacute; &mdash; Orange Sénégal &mdash; 75,3 kg</div>
+            <div class="activity-time">Aujourd'hui &agrave; 10h01 &mdash; Ibrahima WOULARE</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#e74c3c;"></div>
+          <div class="activity-content">
+            <div class="activity-text">Commentaire incident &eacute;cart de poids sur <strong>BSD 05000</strong> &mdash; en attente de validation</div>
+            <div class="activity-time">Aujourd'hui &agrave; 10h14 &mdash; Ibrahima WOULARE</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#559FD7;"></div>
+          <div class="activity-content">
+            <div class="activity-text"><strong>BLD DIA/BLD/2026/01999</strong> confirm&eacute; &mdash; RecyclEco &mdash; 180 kg</div>
+            <div class="activity-time">Hier &agrave; 16h45 &mdash; Boussoura TALLA</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#8CC740;"></div>
+          <div class="activity-content">
+            <div class="activity-text">D&eacute;composition <strong>DIA/DECOMP/2026/0312</strong> marqu&eacute;e Fait &mdash; 320 kg trait&eacute;s</div>
+            <div class="activity-time">Hier &agrave; 14h20 &mdash; Boussoura TALLA</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#e67e22;"></div>
+          <div class="activity-content">
+            <div class="activity-text">Message client re&ccedil;u &mdash; <strong>Transport Ibrahima Sakho</strong> (BSD 04084) &mdash; sans r&eacute;ponse</div>
+            <div class="activity-time">26/03 &agrave; 09h33</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function initDashboard() {
+  var user = localStorage.getItem('wastify_user') || 'Ops';
+  var role = localStorage.getItem('wastify_role') || 'ops';
+  // Redirection selon profil
+  if (role === 'agent_collecte' || role === 'agent_reporting') { window.location.href = 'dashboard_agent.html'; return; }
+  if (role === 'client' || role === 'partenaire') { window.location.href = 'portail_client.html'; return; }
+  var pill = document.getElementById('user-pill');
+  if (pill) pill.textContent = user.split(' ')[0] + ' ↗';
+  // Masquer config si ops (pas manager)
+  if (role === 'ops') {
+    document.querySelectorAll('.nav-manager-only').forEach(function(el){ el.style.display = 'none'; });
+  }
+}
+document.addEventListener('DOMContentLoaded', initDashboard);
+
+function setFilter(btn, period) {
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function scrollToSection(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function validerComment(btn) {
+  var item = btn.closest('.comment-item');
+  var bsd = item.querySelector('.comment-bsd').textContent;
+  item.style.opacity = '0.5';
+  item.querySelector('.comment-actions').innerHTML =
+    '<span style="color:#3d7a14;font-size:12px;font-weight:bold;">&#10003; Valid&eacute; et envoy&eacute; au client</span>';
+  var badge = document.querySelector('#comments .card-head-title span');
+  if (badge) {
+    var n = parseInt(badge.textContent) - 1;
+    badge.textContent = n;
+    if (n === 0) badge.style.display = 'none';
+  }
+  alert('Commentaire valid\u00e9 et envoy\u00e9 au client pour ' + bsd);
+}
+
+function editerComment(btn) {
+  alert('Ouverture du BSD pour modification du commentaire...');
+}
+
+function refuserComment(btn) {
+  var item = btn.closest('.comment-item');
+  item.style.opacity = '0.5';
+  item.querySelector('.comment-actions').innerHTML =
+    '<span style="color:#b03a2e;font-size:12px;font-weight:bold;">&#10006; Refus&eacute; &mdash; agent notifi&eacute;</span>';
+}
+
+function toggleNotifs() {
+  alert('3 nouvelles notifications :\n\n&#9888; 4 commentaires en attente\n&#128666; BLD 01997 urgent\n&#128233; 2 messages clients sans r\u00e9ponse');
+}
+</script>
+  <script src="assets/data.js"></script>
+  <script src="assets/nav.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if(document.getElementById("settic-topbar")) SETTIC_renderTopbar();
+      if(document.getElementById("settic-sidebar")) SETTIC_renderSidebar("");
+    });
+  </script>
+</body>
+</html>
